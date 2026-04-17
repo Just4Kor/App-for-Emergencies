@@ -1,0 +1,36 @@
+from abc import ABC, abstractmethod
+from models.person import Person
+
+
+class Worker(Person, ABC):
+    def __init__(self, person_id, name, location, rate, rating):
+        super().__init__(person_id, name, location)
+        self.rate = rate
+        self.rating = rating
+
+    @property
+    @abstractmethod
+    def specialty(self):
+        pass
+
+    def get_profile_summary(self):
+        return f"{self.specialty} {self.name} {self.rate}€/h ⭐{self.rating}"
+
+
+class Plumber(Worker):
+    @property
+    def specialty(self):
+        return "Plumber"
+
+
+class Electrician(Worker):
+    @property
+    def specialty(self):
+        return "Electrician"
+
+
+class Mechanic(Worker):
+    @property
+    def specialty(self):
+        return "Mechanic"
+
