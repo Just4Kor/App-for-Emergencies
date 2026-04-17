@@ -1,0 +1,8 @@
+class SearchEngine:
+    def filter_workers(self, workers, location=None):
+        if location:
+            return [w for w in workers if w.location == location]
+        return workers
+
+    def sort_workers(self, workers):
+        return sorted(workers, key=lambda w: (-w.rating, w.rate))
