@@ -1,0 +1,13 @@
+from models.person import Person
+
+
+class User(Person):
+    def __init__(self, person_id, name, location):
+        super().__init__(person_id, name, location)
+        self._requests = []
+
+    def add_request(self, request):
+        self._requests.append(request)
+
+    def get_profile_summary(self):
+        return f"User: {self.name}"
