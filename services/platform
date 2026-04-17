@@ -1,0 +1,14 @@
+from services.search import SearchEngine
+
+
+class Platform:
+    def __init__(self):
+        self.workers = []
+        self.search = SearchEngine()
+
+    def add_worker(self, worker):
+        self.workers.append(worker)
+
+    def search_workers(self, location = None):
+        result = self.search.filter_workers(self.workers, location)
+        return self.search.sort_workers(result)
