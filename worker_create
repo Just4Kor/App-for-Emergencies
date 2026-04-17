@@ -1,0 +1,12 @@
+from models.worker import Plumber, Electrician, Mechanic
+
+
+class WorkerFactory:
+    @staticmethod
+    def create(worker_type, *args):
+        mapping = {
+            "plumber": Plumber,
+            "electrician": Electrician,
+            "mechanic": Mechanic,
+        }
+        return mapping[worker_type.lower()](*args)
