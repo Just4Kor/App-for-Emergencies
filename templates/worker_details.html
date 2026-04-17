@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="detail-box">
+        <span class="badge">{{ worker.specialty }}</span>
+        <h2 class="section-title">{{ worker.name }}</h2>
+
+        <div class="worker-meta">
+            <div><strong>Location:</strong> {{ worker.location }}</div>
+            <div><strong>Hourly rate:</strong> €{{ worker.rate }}/hour</div>
+            <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
+        </div>
+
+        <a class="btn btn-secondary" href="{{ url_for('home') }}">
+            Back to workers
+        </a>
+    </div>
+
+    <div class="detail-box">
+        <h2 class="section-title">Send a Service Request</h2>
+
+        <form method="post">
+            <div style="margin-bottom: 15px;">
+                <label for="customer_name">Your name</label>
+                <input type="text" id="customer_name" name="customer_name">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="customer_location">Your location</label>
+                <input type="text" id="customer_location" name="customer_location">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="problem_title">Problem title</label>
+                <input type="text" id="problem_title" name="problem_title"
+                       placeholder="Example: Leaking faucet">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="problem_description">Problem description</label>
+                <textarea id="problem_description" name="problem_description"
+                          placeholder="Describe the problem in detail..."></textarea>
+            </div>
+
+            <button class="btn" type="submit">Submit request</button>
+        </form>
+    </div>
+{% endblock %}
