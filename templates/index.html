@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="filter-box">
+        <form method="get" action="{{ url_for('home') }}">
+            <div class="filter-grid">
+                <div>
+                    <label for="location">Location</label>
+                    <select name="location" id="location">
+                        <option value="">All locations</option>
+                        <option value="Vilnius"
+                            {% if selected_location == "Vilnius" %}selected{% endif %}>
+                            Vilnius
+                        </option>
+                        <option value="Kaunas"
+                            {% if selected_location == "Kaunas" %}selected{% endif %}>
+                            Kaunas
+                        </option>
+                        <option value="Klaipeda"
+                            {% if selected_location == "Klaipeda" %}selected{% endif %}>
+                            Klaipeda
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="specialty">Specialty</label>
+                    <select name="specialty" id="specialty">
+                        <option value="">All specialties</option>
+                        <option value="Plumber"
+                            {% if selected_specialty == "Plumber" %}selected{% endif %}>
+                            Plumber
+                        </option>
+                        <option value="Electrician"
+                            {% if selected_specialty == "Electrician" %}selected{% endif %}>
+                            Electrician
+                        </option>
+                        <option value="Mechanic"
+                            {% if selected_specialty == "Mechanic" %}selected{% endif %}>
+                            Mechanic
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <button class="btn" type="submit">Search workers</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <h2 class="section-title">Available Workers</h2>
+
+    {% if workers %}
+        <div class="card-grid">
+            {% for worker in workers %}
+                <div class="card">
+                    <span class="badge">{{ worker.specialty }}</span>
+                    <h3>{{ worker.name }}</h3>
+
+                    <div class="worker-meta">
+                        <div><strong>Location:</strong> {{ worker.location }}</div>
+                        <div><strong>Hourly rate:</strong> €{{ worker.rate }}/hour</div>
+                        <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
+                    </div>
+
+                    <a class="btn" href="{{ url_for('worker_details', worker_id=worker.person_id) }}">
+                        View details
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-box">
+            <h3>No workers found</h3>
+            <p>Try another location or specialty.</p>
+        </div>
+    {% endif %}
+{% endblock %}
