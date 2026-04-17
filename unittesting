@@ -1,0 +1,147 @@
+import json
+import os
+import tempfile
+import unittest
+
+from factory.worker_factory import WorkerFactory
+from models.person import ValidationError
+from services.platform import Platform
+from services.search import SearchEngine
+from storage.json_storage import JsonStorage
+
+
+class TestPlatform(unittest.TestCase):
+    def setUp(self):
+        self.platform = Platform()
+        self.w1 = WorkerFactory.create(
+            "plumber", 1, "John", "Vilnius", 20, 4.5
+        )
+        self.w2 = WorkerFactory.create(
+            "mechanic", 2, "Mike", "Kaunas", 25, 4.9
+        )
+        self.w3 = WorkerFactory.create(
+            "electrician", 3, "Anna", "Vilnius", 22, 4.9
+        )
+        self.platform.add_worker(self.w1)
+        self.platform.add_worker(self.w2)
+        self.platform.add_worker(self.w3)
+
+    def test_add_worker(self):
+        self.assertEqual(len(self.platform.workers), 3)
+
+    def test_search_by_location(self):
+        result = self.platform.search_workers("Vilnius")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].name, "Anna")
+        self.assertEqual(result[1].name, "John")
+
+    def test_search_without_location_returns_all_workers(self):
+        result = self.platform.search_workers()
+        self.assertEqual(len(result), 3)
+
+    def test_sorting_by_rating_then_rate(self):
+        result = self.platform.search_workers()
+        self.assertEqual(result[0].name, "Anna")
+        self.assertEqual(result[1].name, "Mike")
+        self.assertEqual(result[2].name, "John")
+
+    def test_worker_profile_summary_contains_specialty(self):
+        summary = self.w1.get_profile_summary()
+        self.assertIn("Plumber", summary)
+        self.assertIn("John", summary)
+
+
+class TestValidation(unittest.TestCase):
+    def test_empty_name_raises_error(self):
+        with self.assertRaises(ValidationError):
+            WorkerFactory.create("plumber", 10, "", "Vilnius", 20, 4.0)
+
+    def test_empty_location_raises_error(self):
+        with self.assertRaises(ValidationError):
+            WorkerFactory.create("mechanic", 11, "Tom", "", 25, 4.2)
+
+
+class TestWorkerFactory(unittest.TestCase):
+    def test_create_plumber(self):
+        worker = WorkerFactory.create("plumber", 5, "Petras", "Vilnius", 18, 4.1)
+        self.assertEqual(worker.specialty, "Plumber")
+
+    def test_create_electrician(self):
+        worker = WorkerFactory.create(
+            "electrician", 6, "Ema", "Kaunas", 24, 4.7
+        )
+        self.assertEqual(worker.specialty, "Electrician")
+
+    def test_create_mechanic(self):
+        worker = WorkerFactory.create("mechanic", 7, "Lukas", "Klaipeda", 30, 4.3)
+        self.assertEqual(worker.specialty, "Mechanic")
+
+    def test_invalid_worker_type_raises_key_error(self):
+        with self.assertRaises(KeyError):
+            WorkerFactory.create("builder", 8, "Jonas", "Vilnius", 20, 4.0)
+
+class TestSearchEngine(unittest.TestCase):
+    def setUp(self):
+        self.search_engine = SearchEngine()
+        self.workers = [
+            WorkerFactory.create("plumber", 1, "John", "Vilnius", 20, 4.5),
+            WorkerFactory.create("mechanic", 2, "Mike", "Kaunas", 25, 4.9),
+            WorkerFactory.create("electrician", 3, "Anna", "Vilnius", 22, 4.9),
+        ]
+
+    def test_filter_workers_by_location(self):
+        result = self.search_engine.filter_workers(self.workers, "Vilnius")
+        self.assertEqual(len(result), 2)
+
+    def test_filter_workers_without_location_returns_all(self):
+        result = self.search_engine.filter_workers(self.workers)
+        self.assertEqual(len(result), 3)
+
+    def test_sort_workers_orders_by_rating_then_price(self):
+        result = self.search_engine.sort_workers(self.workers)
+        self.assertEqual(result[0].name, "Anna")
+        self.assertEqual(result[1].name, "Mike")
+        self.assertEqual(result[2].name, "John")
+
+class TestJsonStorage(unittest.TestCase):
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.close()
+        self.storage = JsonStorage(self.temp_file.name)
+
+    def tearDown(self):
+        if os.path.exists(self.temp_file.name):
+            os.remove(self.temp_file.name)
+
+    def test_save_and_load_data(self):
+        data = {
+            "workers": [
+                {
+                    "name": "John",
+                    "location": "Vilnius",
+                    "rate": 20,
+                    "rating": 4.5,
+                }
+            ]
+        }
+        self.storage.save(data)
+        loaded_data = self.storage.load()
+        self.assertEqual(data, loaded_data)
+
+    def test_load_missing_file_returns_empty_dict(self):
+        os.remove(self.temp_file.name)
+        loaded_data = self.storage.load()
+        self.assertEqual(loaded_data, {})
+
+    def test_saved_file_contains_valid_json(self):
+        data = {"workers": [{"name": "Anna"}]}
+        self.storage.save(data)
+
+        with open(self.temp_file.name, "r", encoding="utf-8") as file:
+            parsed = json.load(file)
+
+        self.assertEqual(parsed["workers"][0]["name"], "Anna")
+
+
+if __name__ == "__main__":
+    unittest.main()
