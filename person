@@ -1,0 +1,40 @@
+from abc import ABC, abstractmethod
+
+
+class ValidationError(Exception):
+    pass
+
+
+class Person(ABC):
+    def __init__(self, person_id, name, location):
+        self._person_id = person_id
+        self.name = name
+        self.location = location
+
+    @property
+    def person_id(self):
+        return self._person_id
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if not value.strip():
+            raise ValidationError("Invalid name")
+        self._name = value
+
+    @property
+    def location(self):
+        return self._location
+
+    @location.setter
+    def location(self, value):
+        if not value.strip():
+            raise ValidationError("Invalid location")
+        self._location = value
+
+    @abstractmethod
+    def get_profile_summary(self):
+        pass
