@@ -66,7 +66,7 @@ class ServiceRequestRecord(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return UserAccount.query.get(int(user_id))
+    return db.session.get(UserAccount, int(user_id))
 
 
 def seed_workers() -> None:
@@ -178,6 +178,55 @@ def logout():
     logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("home"))
+
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    if request.method == "POST":
+        new_username = request.form.get("username", "").strip()
+        current_password = request.form.get("current_password", "").strip()
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not new_username:
+            flash("Username cannot be empty.", "error")
+            return redirect(url_for("profile"))
+
+        existing_user = UserAccount.query.filter_by(username=new_username).first()
+        if existing_user and existing_user.id != current_user.id:
+            flash("That username is already taken.", "error")
+            return redirect(url_for("profile"))
+
+        current_user.username = new_username
+
+        if current_password or new_password or confirm_password:
+            if not current_user.check_password(current_password):
+                flash("Current password is incorrect.", "error")
+                return redirect(url_for("profile"))
+
+            if not new_password:
+                flash("New password cannot be empty.", "error")
+                return redirect(url_for("profile"))
+
+            if new_password != confirm_password:
+                flash("New passwords do not match.", "error")
+                return redirect(url_for("profile"))
+
+            current_user.set_password(new_password)
+
+        db.session.commit()
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for("profile"))
+
+    request_count = ServiceRequestRecord.query.filter_by(
+        user_id=current_user.id
+    ).count()
+
+    return render_template(
+        "profile.html",
+        request_count=request_count
+    )
 
 
 @app.route("/worker/<int:worker_id>", methods=["GET", "POST"])
