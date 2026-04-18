@@ -24,6 +24,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .navbar h1 {
@@ -33,7 +35,7 @@
         .navbar a {
             color: white;
             text-decoration: none;
-            margin-left: 20px;
+            margin-left: 16px;
             font-weight: bold;
         }
 
@@ -82,19 +84,42 @@
             color: #991b1b;
         }
 
-        .filter-box {
+        .filter-box,
+        .detail-box,
+        .auth-box,
+        .request-item,
+        .empty-box,
+        .card {
             background: white;
+            border-radius: 18px;
             padding: 20px;
-            border-radius: 16px;
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-            margin-bottom: 25px;
         }
 
-        .filter-grid {
+        .filter-box,
+        .detail-box,
+        .auth-box {
+            margin-bottom: 24px;
+        }
+
+        .auth-box {
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .filter-grid,
+        .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 15px;
             align-items: end;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
         }
 
         label {
@@ -142,22 +167,12 @@
             background: #334155;
         }
 
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+        .btn-danger {
+            background: #dc2626;
         }
 
-        .card {
-            background: white;
-            border-radius: 18px;
-            padding: 20px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-        }
-
-        .card h3 {
-            margin-bottom: 10px;
-            color: #0f172a;
+        .btn-danger:hover {
+            background: #b91c1c;
         }
 
         .badge {
@@ -182,28 +197,13 @@
             color: #0f172a;
         }
 
-        .detail-box {
-            background: white;
-            border-radius: 18px;
-            padding: 24px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
-
         .request-item {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
             margin-bottom: 16px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
         }
 
-        .empty-box {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+        .muted {
+            color: #64748b;
+            margin-top: 8px;
         }
 
         footer {
@@ -219,7 +219,13 @@
         <h1>Emergency Services Finder</h1>
         <div>
             <a href="{{ url_for('home') }}">Home</a>
-            <a href="{{ url_for('requests_page') }}">Requests</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('requests_page') }}">My Requests</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            {% endif %}
         </div>
     </div>
 
