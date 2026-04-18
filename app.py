@@ -11,29 +11,29 @@ platform = Platform()
 service_requests = []
 
 
-def seed_workers() -> None:
+def seed_workers():
     """Load example workers into the platform once."""
     if platform.workers:
         return
 
     workers = [
         WorkerFactory.create(
-            "plumber", 1, "John Smith", "Vilnius", 20, 4.5
+            "plumber", 1, "Aleksas Aleksandravičius", "Vilnius", 20, 4.5
         ),
         WorkerFactory.create(
-            "mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9
+            "mechanic", 2, "Maikas Maiklasonas", "Kaunas", 25, 4.9
         ),
         WorkerFactory.create(
-            "electrician", 3, "Anna White", "Vilnius", 22, 4.9
+            "electrician", 3, "Ana Vilinija", "Vilnius", 22, 4.9
         ),
         WorkerFactory.create(
-            "plumber", 4, "Laura Green", "Klaipeda", 18, 4.3
+            "plumber", 4, "Laura Grazavaitė", "Klaipeda", 18, 4.3
         ),
         WorkerFactory.create(
-            "electrician", 5, "Tomas Black", "Kaunas", 24, 4.6
+            "electrician", 5, "Tomas Belingeris", "Kaunas", 24, 4.6
         ),
         WorkerFactory.create(
-            "mechanic", 6, "Peter Stone", "Vilnius", 28, 4.8
+            "mechanic", 6, "Lukas Lukočiūnas", "Vilnius", 28, 4.8
         ),
     ]
 
