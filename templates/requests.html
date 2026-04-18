@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2 class="section-title">Submitted Requests</h2>
+    <h2 class="section-title">My Requests</h2>
 
     {% if requests_data %}
         {% for item in requests_data %}
             <div class="request-item">
                 <h3>{{ item.problem_title }}</h3>
-                <p><strong>Customer:</strong> {{ item.customer_name }}</p>
-                <p><strong>Customer location:</strong> {{ item.customer_location }}</p>
                 <p><strong>Worker:</strong> {{ item.worker_name }} ({{ item.worker_specialty }})</p>
                 <p><strong>Worker location:</strong> {{ item.worker_location }}</p>
                 <p><strong>Hourly rate:</strong> €{{ item.hourly_rate }}/hour</p>
                 <p><strong>Rating:</strong> {{ item.rating }} / 5</p>
                 <p><strong>Description:</strong> {{ item.problem_description }}</p>
+
+                <form method="post" action="{{ url_for('delete_request', request_id=item.id) }}" style="margin-top: 15px;">
+                    <button class="btn btn-danger" type="submit">Delete request</button>
+                </form>
             </div>
         {% endfor %}
     {% else %}
         <div class="empty-box">
-            <h3>No requests submitted yet</h3>
-            <p>Choose a worker and send your first request.</p>
+            <h3>No requests saved yet</h3>
+            <p>You can store up to 5 requests in your account.</p>
         </div>
     {% endif %}
 {% endblock %}
