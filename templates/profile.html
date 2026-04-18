@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="profile-box">
+        <h2 class="section-title">My Profile</h2>
+
+        <div class="profile-info">
+            <p><strong>User ID:</strong> {{ current_user.id }}</p>
+            <p><strong>Username:</strong> {{ current_user.username }}</p>
+            <p><strong>Saved requests:</strong> {{ request_count }} / 5</p>
+        </div>
+    </div>
+
+    <div class="profile-box">
+        <h2 class="section-title">Edit Profile</h2>
+
+        <form method="post">
+            <div style="margin-bottom: 15px;">
+                <label for="username">Change username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value="{{ current_user.username }}"
+                >
+            </div>
+
+            <h3 style="margin-bottom: 12px;">Change password</h3>
+
+            <div style="margin-bottom: 15px;">
+                <label for="current_password">Current password</label>
+                <input
+                    type="password"
+                    id="current_password"
+                    name="current_password"
+                >
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="new_password">New password</label>
+                <input
+                    type="password"
+                    id="new_password"
+                    name="new_password"
+                >
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="confirm_password">Confirm new password</label>
+                <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                >
+            </div>
+
+            <button class="btn" type="submit">Save changes</button>
+        </form>
+    </div>
+{% endblock %}
