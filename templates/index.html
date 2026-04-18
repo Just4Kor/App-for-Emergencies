@@ -8,18 +8,9 @@
                     <label for="location">Location</label>
                     <select name="location" id="location">
                         <option value="">All locations</option>
-                        <option value="Vilnius"
-                            {% if selected_location == "Vilnius" %}selected{% endif %}>
-                            Vilnius
-                        </option>
-                        <option value="Kaunas"
-                            {% if selected_location == "Kaunas" %}selected{% endif %}>
-                            Kaunas
-                        </option>
-                        <option value="Klaipeda"
-                            {% if selected_location == "Klaipeda" %}selected{% endif %}>
-                            Klaipeda
-                        </option>
+                        <option value="Vilnius" {% if selected_location == "Vilnius" %}selected{% endif %}>Vilnius</option>
+                        <option value="Kaunas" {% if selected_location == "Kaunas" %}selected{% endif %}>Kaunas</option>
+                        <option value="Klaipeda" {% if selected_location == "Klaipeda" %}selected{% endif %}>Klaipeda</option>
                     </select>
                 </div>
 
@@ -27,18 +18,9 @@
                     <label for="specialty">Specialty</label>
                     <select name="specialty" id="specialty">
                         <option value="">All specialties</option>
-                        <option value="Plumber"
-                            {% if selected_specialty == "Plumber" %}selected{% endif %}>
-                            Plumber
-                        </option>
-                        <option value="Electrician"
-                            {% if selected_specialty == "Electrician" %}selected{% endif %}>
-                            Electrician
-                        </option>
-                        <option value="Mechanic"
-                            {% if selected_specialty == "Mechanic" %}selected{% endif %}>
-                            Mechanic
-                        </option>
+                        <option value="Plumber" {% if selected_specialty == "Plumber" %}selected{% endif %}>Plumber</option>
+                        <option value="Electrician" {% if selected_specialty == "Electrician" %}selected{% endif %}>Electrician</option>
+                        <option value="Mechanic" {% if selected_specialty == "Mechanic" %}selected{% endif %}>Mechanic</option>
                     </select>
                 </div>
 
@@ -64,9 +46,15 @@
                         <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
                     </div>
 
-                    <a class="btn" href="{{ url_for('worker_details', worker_id=worker.person_id) }}">
-                        View details
-                    </a>
+                    {% if current_user.is_authenticated %}
+                        <a class="btn" href="{{ url_for('worker_details', worker_id=worker.person_id) }}">
+                            View details
+                        </a>
+                    {% else %}
+                        <a class="btn" href="{{ url_for('login') }}">
+                            Login to request
+                        </a>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
