@@ -89,7 +89,8 @@
         .auth-box,
         .request-item,
         .empty-box,
-        .card {
+        .card,
+        .profile-box {
             background: white;
             border-radius: 18px;
             padding: 20px;
@@ -98,12 +99,14 @@
 
         .filter-box,
         .detail-box,
-        .auth-box {
+        .auth-box,
+        .profile-box {
             margin-bottom: 24px;
         }
 
-        .auth-box {
-            max-width: 500px;
+        .auth-box,
+        .profile-box {
+            max-width: 700px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -206,6 +209,11 @@
             margin-top: 8px;
         }
 
+        .profile-info {
+            line-height: 1.9;
+            margin-bottom: 20px;
+        }
+
         footer {
             margin-top: 40px;
             padding: 24px;
@@ -220,6 +228,7 @@
         <div>
             <a href="{{ url_for('home') }}">Home</a>
             {% if current_user.is_authenticated %}
+                <a href="{{ url_for('profile') }}">Profile</a>
                 <a href="{{ url_for('requests_page') }}">My Requests</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
