@@ -1,0 +1,6 @@
+from web_models.account import BaseAccount
+
+
+class CustomerAccountModel(BaseAccount):
+    def get_role(self):
+        return "customer"
