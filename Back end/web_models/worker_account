@@ -1,0 +1,36 @@
+from web_models.account import BaseAccount
+
+
+class WorkerAccountModel(BaseAccount):
+    def __init__(
+        self,
+        username,
+        password_hash,
+        specialty,
+        location,
+        hourly_rate,
+        rating):
+        super().__init__(username, password_hash)
+        self._specialty = specialty
+        self._location = location
+        self._hourly_rate = hourly_rate
+        self._rating = rating
+
+    @property
+    def specialty(self):
+        return self._specialty
+
+    @property
+    def location(self):
+        return self._location
+
+    @property
+    def hourly_rate(self):
+        return self._hourly_rate
+
+    @property
+    def rating(self):
+        return self._rating
+
+    def get_role(self):
+        return "worker"
