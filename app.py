@@ -41,7 +41,14 @@ class CustomerAccount(UserMixin, db.Model):
         backref="customer",
         lazy=True,
         cascade="all, delete-orphan",
-        order_by="ServiceRequestRecord.created_at"
+        order_by="ServiceRequestRecord.created_at",
+    )
+
+    given_ratings = db.relationship(
+        "WorkerRating",
+        backref="customer",
+        lazy=True,
+        cascade="all, delete-orphan",
     )
 
     def set_password(self, password: str) -> None:
@@ -70,7 +77,14 @@ class WorkerAccount(UserMixin, db.Model):
         "ServiceRequestRecord",
         backref="worker_account",
         lazy=True,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+    )
+
+    received_ratings = db.relationship(
+        "WorkerRating",
+        backref="worker",
+        lazy=True,
+        cascade="all, delete-orphan",
     )
 
     def set_password(self, password: str) -> None:
@@ -98,19 +112,52 @@ class ServiceRequestRecord(db.Model):
     created_at = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.utcnow
+        default=datetime.utcnow,
     )
 
     customer_id = db.Column(
         db.Integer,
         db.ForeignKey("customers.id"),
-        nullable=False
+        nullable=False,
     )
 
     worker_account_id = db.Column(
         db.Integer,
         db.ForeignKey("worker_accounts.id"),
-        nullable=True
+        nullable=True,
+    )
+
+
+class WorkerRating(db.Model):
+    __tablename__ = "worker_ratings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    score = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    customer_id = db.Column(
+        db.Integer,
+        db.ForeignKey("customers.id"),
+        nullable=False,
+    )
+
+    worker_id = db.Column(
+        db.Integer,
+        db.ForeignKey("worker_accounts.id"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "customer_id",
+            "worker_id",
+            name="unique_customer_worker_rating",
+        ),
     )
 
 
@@ -131,13 +178,9 @@ def seed_workers() -> None:
     workers = [
         WorkerFactory.create("plumber", 1, "John Smith", "Vilnius", 20, 4.5),
         WorkerFactory.create("mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
-        WorkerFactory.create(
-            "electrician", 3, "Anna White", "Vilnius", 22, 4.9
-        ),
+        WorkerFactory.create("electrician", 3, "Anna White", "Vilnius", 22, 4.9),
         WorkerFactory.create("plumber", 4, "Laura Green", "Klaipeda", 18, 4.3),
-        WorkerFactory.create(
-            "electrician", 5, "Tomas Black", "Kaunas", 24, 4.6
-        ),
+        WorkerFactory.create("electrician", 5, "Tomas Black", "Kaunas", 24, 4.6),
         WorkerFactory.create("mechanic", 6, "Peter Stone", "Vilnius", 28, 4.8),
     ]
 
@@ -151,6 +194,18 @@ def get_seed_workers():
 
 def get_registered_workers():
     return WorkerAccount.query.all()
+
+
+def refresh_worker_rating(worker: WorkerAccount) -> None:
+    ratings = WorkerRating.query.filter_by(worker_id=worker.id).all()
+
+    if ratings:
+        average = sum(item.score for item in ratings) / len(ratings)
+        worker.rating = round(average, 2)
+    else:
+        worker.rating = 5.0
+
+    db.session.commit()
 
 
 @app.route("/")
@@ -226,12 +281,8 @@ def register():
             flash("Please fill in all required fields.", "error")
             return redirect(url_for("register"))
 
-        existing_customer = CustomerAccount.query.filter_by(
-            username=username
-        ).first()
-        existing_worker = WorkerAccount.query.filter_by(
-            username=username
-        ).first()
+        existing_customer = CustomerAccount.query.filter_by(username=username).first()
+        existing_worker = WorkerAccount.query.filter_by(username=username).first()
 
         if existing_customer or existing_worker:
             flash("Username already exists.", "error")
@@ -266,6 +317,10 @@ def register():
                 hourly_rate_value = float(hourly_rate)
             except ValueError:
                 flash("Hourly rate must be a number.", "error")
+                return redirect(url_for("register"))
+
+            if hourly_rate_value <= 0:
+                flash("Hourly rate must be greater than 0.", "error")
                 return redirect(url_for("register"))
 
             worker = WorkerAccount(
@@ -336,12 +391,8 @@ def profile():
             flash("Username cannot be empty.", "error")
             return redirect(url_for("profile"))
 
-        existing_customer = CustomerAccount.query.filter_by(
-            username=new_username
-        ).first()
-        existing_worker = WorkerAccount.query.filter_by(
-            username=new_username
-        ).first()
+        existing_customer = CustomerAccount.query.filter_by(username=new_username).first()
+        existing_worker = WorkerAccount.query.filter_by(username=new_username).first()
 
         username_taken_by_other_customer = (
             existing_customer is not None and
@@ -372,6 +423,27 @@ def profile():
                 return redirect(url_for("profile"))
             current_user.city = new_city
 
+        if current_user.role == "worker":
+            new_location = request.form.get("location", "").strip()
+            new_hourly_rate = request.form.get("hourly_rate", "").strip()
+
+            if not new_location:
+                flash("Location cannot be empty.", "error")
+                return redirect(url_for("profile"))
+
+            try:
+                rate_value = float(new_hourly_rate)
+            except ValueError:
+                flash("Hourly rate must be a number.", "error")
+                return redirect(url_for("profile"))
+
+            if rate_value <= 0:
+                flash("Hourly rate must be greater than 0.", "error")
+                return redirect(url_for("profile"))
+
+            current_user.location = new_location
+            current_user.hourly_rate = rate_value
+
         db.session.commit()
         flash("Profile updated successfully.", "success")
         return redirect(url_for("profile"))
@@ -382,7 +454,15 @@ def profile():
             customer_id=current_user.id
         ).count()
 
-    return render_template("profile.html", request_count=request_count)
+    ratings_count = 0
+    if current_user.role == "worker":
+        ratings_count = WorkerRating.query.filter_by(worker_id=current_user.id).count()
+
+    return render_template(
+        "profile.html",
+        request_count=request_count,
+        ratings_count=ratings_count,
+    )
 
 
 @app.route("/worker/<source>/<int:worker_id>", methods=["GET", "POST"])
@@ -394,6 +474,8 @@ def worker_details(source: str, worker_id: int):
 
     worker_data = None
     worker_account_id = None
+    already_rated = False
+    existing_rating = None
 
     if source == "seed":
         for worker in platform.workers:
@@ -404,6 +486,7 @@ def worker_details(source: str, worker_id: int):
                     "specialty": worker.specialty,
                     "rate": worker.rate,
                     "rating": worker.rating,
+                    "source": "seed",
                 }
                 break
 
@@ -411,12 +494,19 @@ def worker_details(source: str, worker_id: int):
         worker = db.session.get(WorkerAccount, worker_id)
         if worker is not None:
             worker_account_id = worker.id
+            existing_rating = WorkerRating.query.filter_by(
+                customer_id=current_user.id,
+                worker_id=worker.id,
+            ).first()
+            already_rated = existing_rating is not None
+
             worker_data = {
                 "name": worker.username,
                 "location": worker.location,
                 "specialty": worker.specialty,
                 "rate": worker.hourly_rate,
                 "rating": worker.rating,
+                "source": "db",
             }
 
     if worker_data is None:
@@ -424,57 +514,121 @@ def worker_details(source: str, worker_id: int):
         return redirect(url_for("home"))
 
     if request.method == "POST":
-        problem_title = request.form.get("problem_title", "").strip()
-        problem_description = request.form.get(
-            "problem_description", ""
-        ).strip()
+        action = request.form.get("action", "").strip()
 
-        if not problem_title or not problem_description:
-            flash("Please describe your problem.", "error")
+        if action == "create_request":
+            problem_title = request.form.get("problem_title", "").strip()
+            problem_description = request.form.get(
+                "problem_description", ""
+            ).strip()
+
+            if not problem_title or not problem_description:
+                flash("Please describe your problem.", "error")
+                return redirect(
+                    url_for("worker_details", source=source, worker_id=worker_id)
+                )
+
+            request_count = ServiceRequestRecord.query.filter_by(
+                customer_id=current_user.id
+            ).count()
+
+            if request_count >= 5:
+                oldest_request = ServiceRequestRecord.query.filter_by(
+                    customer_id=current_user.id
+                ).order_by(ServiceRequestRecord.created_at.asc()).first()
+
+                if oldest_request is not None:
+                    db.session.delete(oldest_request)
+                    db.session.commit()
+
+            new_request = ServiceRequestRecord(
+                problem_title=problem_title,
+                problem_description=problem_description,
+                worker_name=worker_data["name"],
+                worker_specialty=worker_data["specialty"],
+                worker_location=worker_data["location"],
+                hourly_rate=worker_data["rate"],
+                rating=worker_data["rating"],
+                customer_id=current_user.id,
+                worker_account_id=worker_account_id,
+            )
+
+            db.session.add(new_request)
+            db.session.commit()
+
+            flash(
+                "Request submitted successfully. If you already had 5 requests, "
+                "the oldest one was removed.",
+                "success",
+            )
+            return redirect(url_for("requests_page"))
+
+        if action == "rate_worker":
+            if source != "db" or worker_account_id is None:
+                flash("Only registered workers can be rated.", "error")
+                return redirect(
+                    url_for("worker_details", source=source, worker_id=worker_id)
+                )
+
+            score_raw = request.form.get("score", "").strip()
+            comment = request.form.get("comment", "").strip()
+
+            try:
+                score = int(score_raw)
+            except ValueError:
+                flash("Rating score must be a whole number from 1 to 5.", "error")
+                return redirect(
+                    url_for("worker_details", source=source, worker_id=worker_id)
+                )
+
+            if score < 1 or score > 5:
+                flash("Rating score must be between 1 and 5.", "error")
+                return redirect(
+                    url_for("worker_details", source=source, worker_id=worker_id)
+                )
+
+            worker = db.session.get(WorkerAccount, worker_account_id)
+            existing_rating = WorkerRating.query.filter_by(
+                customer_id=current_user.id,
+                worker_id=worker_account_id,
+            ).first()
+
+            if existing_rating is None:
+                rating_item = WorkerRating(
+                    score=score,
+                    comment=comment,
+                    customer_id=current_user.id,
+                    worker_id=worker_account_id,
+                )
+                db.session.add(rating_item)
+            else:
+                existing_rating.score = score
+                existing_rating.comment = comment
+                existing_rating.created_at = datetime.utcnow()
+
+            db.session.commit()
+            refresh_worker_rating(worker)
+
+            flash("Rating saved successfully.", "success")
             return redirect(
                 url_for("worker_details", source=source, worker_id=worker_id)
             )
 
-        request_count = ServiceRequestRecord.query.filter_by(
-            customer_id=current_user.id
-        ).count()
-
-        if request_count >= 5:
-            oldest_request = ServiceRequestRecord.query.filter_by(
-                customer_id=current_user.id
-            ).order_by(ServiceRequestRecord.created_at.asc()).first()
-
-            if oldest_request is not None:
-                db.session.delete(oldest_request)
-                db.session.commit()
-
-        new_request = ServiceRequestRecord(
-            problem_title=problem_title,
-            problem_description=problem_description,
-            worker_name=worker_data["name"],
-            worker_specialty=worker_data["specialty"],
-            worker_location=worker_data["location"],
-            hourly_rate=worker_data["rate"],
-            rating=worker_data["rating"],
-            customer_id=current_user.id,
-            worker_account_id=worker_account_id,
-        )
-
-        db.session.add(new_request)
-        db.session.commit()
-
-        flash(
-            "Request submitted successfully. "
-            "If you already had 5 requests, the oldest one was removed.",
-            "success",
-        )
-        return redirect(url_for("requests_page"))
+    ratings = []
+    if worker_account_id is not None:
+        ratings = WorkerRating.query.filter_by(
+            worker_id=worker_account_id
+        ).order_by(WorkerRating.created_at.desc()).all()
 
     return render_template(
         "worker_details.html",
         worker=worker_data,
         source=source,
         worker_id=worker_id,
+        worker_account_id=worker_account_id,
+        already_rated=already_rated,
+        existing_rating=existing_rating,
+        ratings=ratings,
     )
 
 
@@ -503,9 +657,14 @@ def worker_dashboard():
         worker_account_id=current_user.id
     ).order_by(ServiceRequestRecord.created_at.desc()).all()
 
+    ratings = WorkerRating.query.filter_by(
+        worker_id=current_user.id
+    ).order_by(WorkerRating.created_at.desc()).all()
+
     return render_template(
         "worker_dashboard.html",
         requests_data=requests_data,
+        ratings=ratings,
     )
 
 
