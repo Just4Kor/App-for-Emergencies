@@ -24,6 +24,8 @@
         </p>
 
         <form method="post">
+            <input type="hidden" name="action" value="create_request">
+
             <div style="margin-bottom: 15px;">
                 <label for="problem_title">Problem title</label>
                 <input
@@ -46,4 +48,61 @@
             <button class="btn" type="submit">Submit request</button>
         </form>
     </div>
+
+    {% if worker.source == "db" %}
+        <div class="rating-box">
+            <h2 class="section-title">Rate this worker</h2>
+            <p class="small-text">
+                You can submit one rating per registered worker. Submitting again updates your rating.
+            </p>
+
+            <form method="post">
+                <input type="hidden" name="action" value="rate_worker">
+
+                <div style="margin-bottom: 15px;">
+                    <label for="score">Score</label>
+                    <select id="score" name="score">
+                        <option value="1" {% if existing_rating and existing_rating.score == 1 %}selected{% endif %}>1</option>
+                        <option value="2" {% if existing_rating and existing_rating.score == 2 %}selected{% endif %}>2</option>
+                        <option value="3" {% if existing_rating and existing_rating.score == 3 %}selected{% endif %}>3</option>
+                        <option value="4" {% if existing_rating and existing_rating.score == 4 %}selected{% endif %}>4</option>
+                        <option value="5" {% if existing_rating and existing_rating.score == 5 %}selected{% endif %}>5</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="comment">Comment</label>
+                    <textarea
+                        id="comment"
+                        name="comment"
+                        placeholder="Optional comment"
+                    >{% if existing_rating and existing_rating.comment %}{{ existing_rating.comment }}{% endif %}</textarea>
+                </div>
+
+                <button class="btn" type="submit">
+                    {% if already_rated %}Update rating{% else %}Submit rating{% endif %}
+                </button>
+            </form>
+        </div>
+
+        <div class="rating-box">
+            <h2 class="section-title">Customer Ratings</h2>
+
+            {% if ratings %}
+                {% for item in ratings %}
+                    <div class="request-item">
+                        <p><strong>Score:</strong> {{ item.score }} / 5</p>
+                        <p><strong>Customer ID:</strong> {{ item.customer_id }}</p>
+                        <p><strong>Comment:</strong> {{ item.comment if item.comment else "No comment" }}</p>
+                        <p><strong>Created:</strong> {{ item.created_at }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-box">
+                    <h3>No ratings yet</h3>
+                    <p>This worker has not been rated yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 {% endblock %}
