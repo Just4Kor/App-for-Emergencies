@@ -13,7 +13,10 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from factory.worker_factory import WorkerFactory
+from models.person import ValidationError
+from models.rating import WorkerRating
 from services.platform import Platform
+from services.rating_service import RatingService
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "coursework-secret-key"
@@ -26,6 +29,7 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 platform = Platform()
+rating_service = RatingService()
 
 
 class CustomerAccount(UserMixin, db.Model):
@@ -45,7 +49,7 @@ class CustomerAccount(UserMixin, db.Model):
     )
 
     given_ratings = db.relationship(
-        "WorkerRating",
+        "WorkerRatingRecord",
         backref="customer",
         lazy=True,
         cascade="all, delete-orphan",
@@ -81,7 +85,7 @@ class WorkerAccount(UserMixin, db.Model):
     )
 
     received_ratings = db.relationship(
-        "WorkerRating",
+        "WorkerRatingRecord",
         backref="worker",
         lazy=True,
         cascade="all, delete-orphan",
@@ -128,7 +132,7 @@ class ServiceRequestRecord(db.Model):
     )
 
 
-class WorkerRating(db.Model):
+class WorkerRatingRecord(db.Model):
     __tablename__ = "worker_ratings"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -178,9 +182,13 @@ def seed_workers() -> None:
     workers = [
         WorkerFactory.create("plumber", 1, "John Smith", "Vilnius", 20, 4.5),
         WorkerFactory.create("mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
-        WorkerFactory.create("electrician", 3, "Anna White", "Vilnius", 22, 4.9),
+        WorkerFactory.create(
+            "electrician", 3, "Anna White", "Vilnius", 22, 4.9
+        ),
         WorkerFactory.create("plumber", 4, "Laura Green", "Klaipeda", 18, 4.3),
-        WorkerFactory.create("electrician", 5, "Tomas Black", "Kaunas", 24, 4.6),
+        WorkerFactory.create(
+            "electrician", 5, "Tomas Black", "Kaunas", 24, 4.6
+        ),
         WorkerFactory.create("mechanic", 6, "Peter Stone", "Vilnius", 28, 4.8),
     ]
 
@@ -197,14 +205,23 @@ def get_registered_workers():
 
 
 def refresh_worker_rating(worker: WorkerAccount) -> None:
-    ratings = WorkerRating.query.filter_by(worker_id=worker.id).all()
+    rating_service_local = RatingService()
 
-    if ratings:
-        average = sum(item.score for item in ratings) / len(ratings)
-        worker.rating = round(average, 2)
-    else:
-        worker.rating = 5.0
+    records = WorkerRatingRecord.query.filter_by(worker_id=worker.id).all()
 
+    for record in records:
+        oop_rating = WorkerRating(
+            rating_id=record.id,
+            customer_id=record.customer_id,
+            worker_id=record.worker_id,
+            score=record.score,
+            comment=record.comment or "",
+            created_at=record.created_at.isoformat(),
+        )
+        rating_service_local.add_rating(oop_rating)
+
+    average = rating_service_local.get_average_rating(worker.id)
+    worker.rating = round(average, 2) if average > 0 else 5.0
     db.session.commit()
 
 
@@ -281,8 +298,12 @@ def register():
             flash("Please fill in all required fields.", "error")
             return redirect(url_for("register"))
 
-        existing_customer = CustomerAccount.query.filter_by(username=username).first()
-        existing_worker = WorkerAccount.query.filter_by(username=username).first()
+        existing_customer = CustomerAccount.query.filter_by(
+            username=username
+        ).first()
+        existing_worker = WorkerAccount.query.filter_by(
+            username=username
+        ).first()
 
         if existing_customer or existing_worker:
             flash("Username already exists.", "error")
@@ -391,8 +412,12 @@ def profile():
             flash("Username cannot be empty.", "error")
             return redirect(url_for("profile"))
 
-        existing_customer = CustomerAccount.query.filter_by(username=new_username).first()
-        existing_worker = WorkerAccount.query.filter_by(username=new_username).first()
+        existing_customer = CustomerAccount.query.filter_by(
+            username=new_username
+        ).first()
+        existing_worker = WorkerAccount.query.filter_by(
+            username=new_username
+        ).first()
 
         username_taken_by_other_customer = (
             existing_customer is not None and
@@ -456,7 +481,9 @@ def profile():
 
     ratings_count = 0
     if current_user.role == "worker":
-        ratings_count = WorkerRating.query.filter_by(worker_id=current_user.id).count()
+        ratings_count = WorkerRatingRecord.query.filter_by(
+            worker_id=current_user.id
+        ).count()
 
     return render_template(
         "profile.html",
@@ -494,7 +521,7 @@ def worker_details(source: str, worker_id: int):
         worker = db.session.get(WorkerAccount, worker_id)
         if worker is not None:
             worker_account_id = worker.id
-            existing_rating = WorkerRating.query.filter_by(
+            existing_rating = WorkerRatingRecord.query.filter_by(
                 customer_id=current_user.id,
                 worker_id=worker.id,
             ).first()
@@ -573,37 +600,40 @@ def worker_details(source: str, worker_id: int):
             score_raw = request.form.get("score", "").strip()
             comment = request.form.get("comment", "").strip()
 
-            try:
-                score = int(score_raw)
-            except ValueError:
-                flash("Rating score must be a whole number from 1 to 5.", "error")
-                return redirect(
-                    url_for("worker_details", source=source, worker_id=worker_id)
-                )
+            next_rating_id = WorkerRatingRecord.query.count() + 1
 
-            if score < 1 or score > 5:
-                flash("Rating score must be between 1 and 5.", "error")
+            try:
+                oop_rating = WorkerRating(
+                    rating_id=next_rating_id,
+                    customer_id=current_user.id,
+                    worker_id=worker_account_id,
+                    score=int(score_raw),
+                    comment=comment,
+                )
+            except (ValueError, ValidationError) as error:
+                flash(str(error), "error")
                 return redirect(
                     url_for("worker_details", source=source, worker_id=worker_id)
                 )
 
             worker = db.session.get(WorkerAccount, worker_account_id)
-            existing_rating = WorkerRating.query.filter_by(
+
+            existing_rating = WorkerRatingRecord.query.filter_by(
                 customer_id=current_user.id,
                 worker_id=worker_account_id,
             ).first()
 
             if existing_rating is None:
-                rating_item = WorkerRating(
-                    score=score,
-                    comment=comment,
-                    customer_id=current_user.id,
-                    worker_id=worker_account_id,
+                rating_item = WorkerRatingRecord(
+                    score=oop_rating.score,
+                    comment=oop_rating.comment,
+                    customer_id=oop_rating.customer_id,
+                    worker_id=oop_rating.worker_id,
                 )
                 db.session.add(rating_item)
             else:
-                existing_rating.score = score
-                existing_rating.comment = comment
+                existing_rating.score = oop_rating.score
+                existing_rating.comment = oop_rating.comment
                 existing_rating.created_at = datetime.utcnow()
 
             db.session.commit()
@@ -616,9 +646,21 @@ def worker_details(source: str, worker_id: int):
 
     ratings = []
     if worker_account_id is not None:
-        ratings = WorkerRating.query.filter_by(
+        records = WorkerRatingRecord.query.filter_by(
             worker_id=worker_account_id
-        ).order_by(WorkerRating.created_at.desc()).all()
+        ).order_by(WorkerRatingRecord.created_at.desc()).all()
+
+        for record in records:
+            ratings.append(
+                WorkerRating(
+                    rating_id=record.id,
+                    customer_id=record.customer_id,
+                    worker_id=record.worker_id,
+                    score=record.score,
+                    comment=record.comment or "",
+                    created_at=record.created_at.isoformat(),
+                )
+            )
 
     return render_template(
         "worker_details.html",
@@ -657,9 +699,22 @@ def worker_dashboard():
         worker_account_id=current_user.id
     ).order_by(ServiceRequestRecord.created_at.desc()).all()
 
-    ratings = WorkerRating.query.filter_by(
+    rating_records = WorkerRatingRecord.query.filter_by(
         worker_id=current_user.id
-    ).order_by(WorkerRating.created_at.desc()).all()
+    ).order_by(WorkerRatingRecord.created_at.desc()).all()
+
+    ratings = []
+    for record in rating_records:
+        ratings.append(
+            WorkerRating(
+                rating_id=record.id,
+                customer_id=record.customer_id,
+                worker_id=record.worker_id,
+                score=record.score,
+                comment=record.comment or "",
+                created_at=record.created_at.isoformat(),
+            )
+        )
 
     return render_template(
         "worker_dashboard.html",
