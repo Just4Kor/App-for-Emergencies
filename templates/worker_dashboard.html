@@ -9,7 +9,7 @@
             <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
             <p><strong>Location:</strong> {{ current_user.location }}</p>
             <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
-            <p><strong>Rating:</strong> {{ current_user.rating }}</p>
+            <p><strong>Average rating:</strong> {{ current_user.rating }} / 5</p>
         </div>
     </div>
 
@@ -28,6 +28,24 @@
         <div class="empty-box">
             <h3>No requests yet</h3>
             <p>Customers have not sent you any requests yet.</p>
+        </div>
+    {% endif %}
+
+    <h2 class="section-title">Ratings Received</h2>
+
+    {% if ratings %}
+        {% for item in ratings %}
+            <div class="request-item">
+                <p><strong>Score:</strong> {{ item.score }} / 5</p>
+                <p><strong>Customer ID:</strong> {{ item.customer_id }}</p>
+                <p><strong>Comment:</strong> {{ item.comment if item.comment else "No comment" }}</p>
+                <p><strong>Created:</strong> {{ item.created_at }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <h3>No ratings yet</h3>
+            <p>You have not received any ratings yet.</p>
         </div>
     {% endif %}
 {% endblock %}
