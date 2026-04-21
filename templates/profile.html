@@ -17,6 +17,8 @@
                 <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
                 <p><strong>Location:</strong> {{ current_user.location }}</p>
                 <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
+                <p><strong>Average rating:</strong> {{ current_user.rating }} / 5</p>
+                <p><strong>Total ratings:</strong> {{ ratings_count }}</p>
             {% endif %}
         </div>
     </div>
@@ -47,7 +49,30 @@
                 </div>
             {% endif %}
 
+            {% if current_user.role == "worker" %}
+                <div style="margin-bottom: 15px;">
+                    <label for="location">Change location</label>
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value="{{ current_user.location }}"
+                    >
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="hourly_rate">Change hourly rate</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        id="hourly_rate"
+                        name="hourly_rate"
+                        value="{{ current_user.hourly_rate }}"
+                    >
+                </div>
+            {% endif %}
+
             <button class="btn" type="submit">Save changes</button>
         </form>
     </div>
-{%
+{% endblock %}
