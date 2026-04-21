@@ -1,13 +1,57 @@
-from models.person import Person
+from models.person import Person, ValidationError
 
 
 class User(Person):
-    def __init__(self, person_id, name, location):
+    def __init__(
+        self,
+        person_id,
+        name,
+        location,
+        city
+    ):
         super().__init__(person_id, name, location)
+        self.city = city
         self._requests = []
 
-    def add_request(self, request):
-        self._requests.append(request)
+    @property
+    def city(self):
+        return self._city
 
-    def get_profile_summary(self):
-        return f"User: {self.name}"
+    @city.setter
+    def city(self, value):
+        if not value or not value.strip():
+            raise ValidationError("Invalid city")
+        self._city = value.strip()
+
+    @property
+    def requests(self):
+        return list(self._requests)
+
+    def add_request(self, request_item):
+        self._requests.append(request_item)
+
+    def remove_oldest_request(self):
+        if self._requests:
+            self._requests.pop(0)
+
+    def update_profile(
+        self,
+        name,
+        location,
+        city
+    ):
+        if name is not None and name.strip():
+            self.name = name.strip()
+
+        if location is not None and location.strip():
+            self.location = location.strip()
+
+        if city is not None and city.strip():
+            self.city = city.strip()
+
+    def get_profile_summary(self) -> str:
+        return (
+            f"User: {self.name} | "
+            f"Location: {self.location} | "
+            f"City: {self.city}"
+        )
