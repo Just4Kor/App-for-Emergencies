@@ -9,7 +9,8 @@ class WorkerAccountModel(BaseAccount):
         specialty,
         location,
         hourly_rate,
-        rating):
+        rating
+    ):
         super().__init__(username, password_hash)
         self._specialty = specialty
         self._location = location
