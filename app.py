@@ -1,17 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_login import (
     LoginManager,
     UserMixin,
-    login_user,
+    current_user,
     login_required,
+    login_user,
     logout_user,
-    current_user
 )
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from services.platform import Platform
 from factory.worker_factory import WorkerFactory
+from services.platform import Platform
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "coursework-secret-key"
@@ -32,12 +34,14 @@ class CustomerAccount(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(120), nullable=False, default="Unknown")
 
     requests = db.relationship(
         "ServiceRequestRecord",
         backref="customer",
         lazy=True,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        order_by="ServiceRequestRecord.created_at"
     )
 
     def set_password(self, password: str) -> None:
@@ -57,7 +61,6 @@ class WorkerAccount(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-
     specialty = db.Column(db.String(80), nullable=False)
     location = db.Column(db.String(120), nullable=False)
     hourly_rate = db.Column(db.Float, nullable=False)
@@ -87,12 +90,16 @@ class ServiceRequestRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     problem_title = db.Column(db.String(120), nullable=False)
     problem_description = db.Column(db.Text, nullable=False)
-
     worker_name = db.Column(db.String(120), nullable=False)
     worker_specialty = db.Column(db.String(80), nullable=False)
     worker_location = db.Column(db.String(120), nullable=False)
     hourly_rate = db.Column(db.Float, nullable=False)
     rating = db.Column(db.Float, nullable=False)
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
 
     customer_id = db.Column(
         db.Integer,
@@ -110,7 +117,7 @@ class ServiceRequestRecord(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     customer = db.session.get(CustomerAccount, int(user_id))
-    if customer:
+    if customer is not None:
         return customer
 
     worker = db.session.get(WorkerAccount, int(user_id))
@@ -124,9 +131,13 @@ def seed_workers() -> None:
     workers = [
         WorkerFactory.create("plumber", 1, "John Smith", "Vilnius", 20, 4.5),
         WorkerFactory.create("mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
-        WorkerFactory.create("electrician", 3, "Anna White", "Vilnius", 22, 4.9),
+        WorkerFactory.create(
+            "electrician", 3, "Anna White", "Vilnius", 22, 4.9
+        ),
         WorkerFactory.create("plumber", 4, "Laura Green", "Klaipeda", 18, 4.3),
-        WorkerFactory.create("electrician", 5, "Tomas Black", "Kaunas", 24, 4.6),
+        WorkerFactory.create(
+            "electrician", 5, "Tomas Black", "Kaunas", 24, 4.6
+        ),
         WorkerFactory.create("mechanic", 6, "Peter Stone", "Vilnius", 28, 4.8),
     ]
 
@@ -163,7 +174,7 @@ def home():
                 "specialty": worker.specialty,
                 "rate": worker.rate,
                 "rating": worker.rating,
-                "source": "seed"
+                "source": "seed",
             }
         )
 
@@ -176,19 +187,21 @@ def home():
                 "specialty": worker.specialty,
                 "rate": worker.hourly_rate,
                 "rating": worker.rating,
-                "source": "db"
+                "source": "db",
             }
         )
 
     if location:
         workers = [
-            worker for worker in workers
+            worker
+            for worker in workers
             if worker["location"].lower() == location.lower()
         ]
 
     if specialty:
         workers = [
-            worker for worker in workers
+            worker
+            for worker in workers
             if worker["specialty"].lower() == specialty.lower()
         ]
 
@@ -225,8 +238,15 @@ def register():
             return redirect(url_for("register"))
 
         if role == "customer":
-            user = CustomerAccount(username=username)
+            city = request.form.get("city", "").strip()
+
+            if not city:
+                flash("Please enter your city.", "error")
+                return redirect(url_for("register"))
+
+            user = CustomerAccount(username=username, city=city)
             user.set_password(password)
+
             db.session.add(user)
             db.session.commit()
 
@@ -253,7 +273,7 @@ def register():
                 specialty=specialty,
                 location=location,
                 hourly_rate=hourly_rate_value,
-                rating=5.0
+                rating=5.0,
             )
             worker.set_password(password)
 
@@ -323,21 +343,41 @@ def profile():
             username=new_username
         ).first()
 
-        same_customer = existing_customer and existing_customer.id != current_user.id
-        same_worker = existing_worker and existing_worker.id != current_user.id
+        username_taken_by_other_customer = (
+            existing_customer is not None and
+            not (
+                current_user.role == "customer" and
+                existing_customer.id == current_user.id
+            )
+        )
 
-        if same_customer or same_worker:
+        username_taken_by_other_worker = (
+            existing_worker is not None and
+            not (
+                current_user.role == "worker" and
+                existing_worker.id == current_user.id
+            )
+        )
+
+        if username_taken_by_other_customer or username_taken_by_other_worker:
             flash("That username is already taken.", "error")
             return redirect(url_for("profile"))
 
         current_user.username = new_username
-        db.session.commit()
 
+        if current_user.role == "customer":
+            new_city = request.form.get("city", "").strip()
+            if not new_city:
+                flash("City cannot be empty.", "error")
+                return redirect(url_for("profile"))
+            current_user.city = new_city
+
+        db.session.commit()
         flash("Profile updated successfully.", "success")
         return redirect(url_for("profile"))
 
     request_count = 0
-    if hasattr(current_user, "role") and current_user.role == "customer":
+    if current_user.role == "customer":
         request_count = ServiceRequestRecord.query.filter_by(
             customer_id=current_user.id
         ).count()
@@ -348,7 +388,7 @@ def profile():
 @app.route("/worker/<source>/<int:worker_id>", methods=["GET", "POST"])
 @login_required
 def worker_details(source: str, worker_id: int):
-    if not hasattr(current_user, "role") or current_user.role != "customer":
+    if current_user.role != "customer":
         flash("Only customers can send requests.", "error")
         return redirect(url_for("home"))
 
@@ -363,20 +403,20 @@ def worker_details(source: str, worker_id: int):
                     "location": worker.location,
                     "specialty": worker.specialty,
                     "rate": worker.rate,
-                    "rating": worker.rating
+                    "rating": worker.rating,
                 }
                 break
 
     elif source == "db":
         worker = db.session.get(WorkerAccount, worker_id)
-        if worker:
+        if worker is not None:
             worker_account_id = worker.id
             worker_data = {
                 "name": worker.username,
                 "location": worker.location,
                 "specialty": worker.specialty,
                 "rate": worker.hourly_rate,
-                "rating": worker.rating
+                "rating": worker.rating,
             }
 
     if worker_data is None:
@@ -400,8 +440,13 @@ def worker_details(source: str, worker_id: int):
         ).count()
 
         if request_count >= 5:
-            flash("You can store only 5 requests maximum.", "error")
-            return redirect(url_for("requests_page"))
+            oldest_request = ServiceRequestRecord.query.filter_by(
+                customer_id=current_user.id
+            ).order_by(ServiceRequestRecord.created_at.asc()).first()
+
+            if oldest_request is not None:
+                db.session.delete(oldest_request)
+                db.session.commit()
 
         new_request = ServiceRequestRecord(
             problem_title=problem_title,
@@ -412,63 +457,68 @@ def worker_details(source: str, worker_id: int):
             hourly_rate=worker_data["rate"],
             rating=worker_data["rating"],
             customer_id=current_user.id,
-            worker_account_id=worker_account_id
+            worker_account_id=worker_account_id,
         )
 
         db.session.add(new_request)
         db.session.commit()
 
-        flash("Your request was submitted successfully.", "success")
+        flash(
+            "Request submitted successfully. "
+            "If you already had 5 requests, the oldest one was removed.",
+            "success",
+        )
         return redirect(url_for("requests_page"))
 
     return render_template(
         "worker_details.html",
         worker=worker_data,
         source=source,
-        worker_id=worker_id
+        worker_id=worker_id,
     )
 
 
 @app.route("/requests")
 @login_required
 def requests_page():
-    if not hasattr(current_user, "role") or current_user.role != "customer":
+    if current_user.role != "customer":
         flash("Only customers have personal request history.", "error")
         return redirect(url_for("home"))
 
     requests_data = ServiceRequestRecord.query.filter_by(
         customer_id=current_user.id
-    ).all()
+    ).order_by(ServiceRequestRecord.created_at.desc()).all()
+
     return render_template("requests.html", requests_data=requests_data)
 
 
 @app.route("/worker_dashboard")
 @login_required
 def worker_dashboard():
-    if not hasattr(current_user, "role") or current_user.role != "worker":
+    if current_user.role != "worker":
         flash("Only workers can open this page.", "error")
         return redirect(url_for("home"))
 
     requests_data = ServiceRequestRecord.query.filter_by(
         worker_account_id=current_user.id
-    ).all()
+    ).order_by(ServiceRequestRecord.created_at.desc()).all()
 
     return render_template(
         "worker_dashboard.html",
-        requests_data=requests_data
+        requests_data=requests_data,
     )
 
 
 @app.route("/delete_request/<int:request_id>", methods=["POST"])
 @login_required
 def delete_request(request_id: int):
-    if not hasattr(current_user, "role") or current_user.role != "customer":
+    if current_user.role != "customer":
         flash("Only customers can delete requests.", "error")
         return redirect(url_for("home"))
 
     request_item = ServiceRequestRecord.query.filter_by(
         id=request_id,
-        customer_id=current_user.id
+        customer_id=current_user.id,
     ).first()
 
     if request_item is None:
