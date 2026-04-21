@@ -229,7 +229,12 @@
             <a href="{{ url_for('home') }}">Home</a>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('profile') }}">Profile</a>
-                <a href="{{ url_for('requests_page') }}">My Requests</a>
+                {% if current_user.role == "customer" %}
+                    <a href="{{ url_for('requests_page') }}">My Requests</a>
+                {% endif %}
+                {% if current_user.role == "worker" %}
+                    <a href="{{ url_for('worker_dashboard') }}">Worker Dashboard</a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
