@@ -16,3 +16,4 @@ class BaseAccount(ABC):
 
     @abstractmethod
     def get_role(self):
+        """Return account role."""
