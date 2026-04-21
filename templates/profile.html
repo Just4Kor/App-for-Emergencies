@@ -7,7 +7,17 @@
         <div class="profile-info">
             <p><strong>User ID:</strong> {{ current_user.id }}</p>
             <p><strong>Username:</strong> {{ current_user.username }}</p>
-            <p><strong>Saved requests:</strong> {{ request_count }} / 5</p>
+
+            {% if current_user.role == "customer" %}
+                <p><strong>City:</strong> {{ current_user.city }}</p>
+                <p><strong>Saved requests:</strong> {{ request_count }} / 5</p>
+            {% endif %}
+
+            {% if current_user.role == "worker" %}
+                <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
+                <p><strong>Location:</strong> {{ current_user.location }}</p>
+                <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
+            {% endif %}
         </div>
     </div>
 
@@ -25,36 +35,19 @@
                 >
             </div>
 
-            <h3 style="margin-bottom: 12px;">Change password</h3>
-
-            <div style="margin-bottom: 15px;">
-                <label for="current_password">Current password</label>
-                <input
-                    type="password"
-                    id="current_password"
-                    name="current_password"
-                >
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label for="new_password">New password</label>
-                <input
-                    type="password"
-                    id="new_password"
-                    name="new_password"
-                >
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label for="confirm_password">Confirm new password</label>
-                <input
-                    type="password"
-                    id="confirm_password"
-                    name="confirm_password"
-                >
-            </div>
+            {% if current_user.role == "customer" %}
+                <div style="margin-bottom: 15px;">
+                    <label for="city">Change city</label>
+                    <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        value="{{ current_user.city }}"
+                    >
+                </div>
+            {% endif %}
 
             <button class="btn" type="submit">Save changes</button>
         </form>
     </div>
-{% endblock %}
+{%
