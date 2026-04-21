@@ -1,0 +1,49 @@
+from models.rating import WorkerRating
+
+
+class RatingService:
+    def __init__(self):
+        self._ratings = []
+
+    @property
+    def ratings(self):
+        return list(self._ratings)
+
+    def add_rating(self, rating):
+        existing = self.find_customer_rating(
+            customer_id=rating.customer_id,
+            worker_id=rating.worker_id
+        )
+
+        if existing is not None:
+            existing.update_rating(rating.score, rating.comment)
+        else:
+            self._ratings.append(rating)
+
+    def find_customer_rating(
+        self,
+        customer_id,
+        worker_id
+    ):
+        for rating in self._ratings:
+            if (
+                rating.customer_id == customer_id and
+                rating.worker_id == worker_id
+            ):
+                return rating
+        return None
+
+    def get_worker_ratings(self, worker_id):
+        return [
+            rating for rating in self._ratings
+            if rating.worker_id == worker_id
+        ]
+
+    def get_average_rating(self, worker_id):
+        worker_ratings = self.get_worker_ratings(worker_id)
+
+        if not worker_ratings:
+            return 0.0
+
+        total = sum(rating.score for rating in worker_ratings)
+        return round(total / len(worker_ratings), 2)
