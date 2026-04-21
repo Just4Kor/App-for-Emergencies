@@ -2,5 +2,18 @@ from web_models.account import BaseAccount
 
 
 class CustomerAccountModel(BaseAccount):
+    def __init__(
+        self,
+        username,
+        password_hash,
+        city
+    ):
+        super().__init__(username, password_hash)
+        self._city = city
+
+    @property
+    def city(self):
+        return self._city
+
     def get_role(self):
         return "customer"
