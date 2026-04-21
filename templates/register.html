@@ -1,35 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="auth-box">
-        <h2 class="section-title">Register</h2>
+<div class="auth-box">
+    <h2 class="section-title">Register</h2>
 
-        <form method="post">
-            <div style="margin-bottom: 15px;">
-                <label for="role">Account type</label>
-                <select id="role" name="role">
-                    <option value="customer">Customer</option>
-                    <option value="worker">Worker</option>
-                </select>
-            </div>
+    <form method="post">
+        <!-- ROLE -->
+        <div style="margin-bottom: 15px;">
+            <label for="role">Account type</label>
+            <select id="role" name="role" onchange="toggleFields()">
+                <option value="customer">Customer</option>
+                <option value="worker">Worker</option>
+            </select>
+        </div>
 
-            <div style="margin-bottom: 15px;">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username">
-            </div>
+        <!-- COMMON FIELDS -->
+        <div style="margin-bottom: 15px;">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username">
+        </div>
 
-            <div style="margin-bottom: 15px;">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password">
-            </div>
+        <div style="margin-bottom: 15px;">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password">
+        </div>
 
+        <!-- CUSTOMER FIELDS -->
+        <div id="customer-fields">
             <div style="margin-bottom: 15px;">
-                <label for="city">Customer city</label>
+                <label for="city">City</label>
                 <input type="text" id="city" name="city">
             </div>
+        </div>
 
+        <!-- WORKER FIELDS -->
+        <div id="worker-fields" style="display: none;">
             <div style="margin-bottom: 15px;">
-                <label for="specialty">Worker specialty</label>
+                <label for="specialty">Specialty</label>
                 <select id="specialty" name="specialty">
                     <option value="">Select specialty</option>
                     <option value="Plumber">Plumber</option>
@@ -39,16 +46,36 @@
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label for="location">Worker location</label>
+                <label for="location">Location</label>
                 <input type="text" id="location" name="location">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label for="hourly_rate">Worker hourly rate</label>
+                <label for="hourly_rate">Hourly rate (€)</label>
                 <input type="text" id="hourly_rate" name="hourly_rate">
             </div>
+        </div>
 
-            <button class="btn" type="submit">Create account</button>
-        </form>
-    </div>
+        <button class="btn" type="submit">Create account</button>
+    </form>
+</div>
+
+<script>
+function toggleFields() {
+    const role = document.getElementById("role").value;
+    const customerFields = document.getElementById("customer-fields");
+    const workerFields = document.getElementById("worker-fields");
+
+    if (role === "customer") {
+        customerFields.style.display = "block";
+        workerFields.style.display = "none";
+    } else {
+        customerFields.style.display = "none";
+        workerFields.style.display = "block";
+    }
+}
+
+// Run on page load
+window.onload = toggleFields;
+</script>
 {% endblock %}
