@@ -6,6 +6,14 @@
 
         <form method="post">
             <div style="margin-bottom: 15px;">
+                <label for="role">Account type</label>
+                <select id="role" name="role">
+                    <option value="customer">Customer</option>
+                    <option value="worker">Worker</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username">
             </div>
@@ -13,6 +21,31 @@
             <div style="margin-bottom: 15px;">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="city">Customer city</label>
+                <input type="text" id="city" name="city">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="specialty">Worker specialty</label>
+                <select id="specialty" name="specialty">
+                    <option value="">Select specialty</option>
+                    <option value="Plumber">Plumber</option>
+                    <option value="Electrician">Electrician</option>
+                    <option value="Mechanic">Mechanic</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="location">Worker location</label>
+                <input type="text" id="location" name="location">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="hourly_rate">Worker hourly rate</label>
+                <input type="text" id="hourly_rate" name="hourly_rate">
             </div>
 
             <button class="btn" type="submit">Create account</button>
