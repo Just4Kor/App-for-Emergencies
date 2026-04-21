@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="profile-box">
+        <h2 class="section-title">Worker Dashboard</h2>
+
+        <div class="profile-info">
+            <p><strong>Username:</strong> {{ current_user.username }}</p>
+            <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
+            <p><strong>Location:</strong> {{ current_user.location }}</p>
+            <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
+            <p><strong>Rating:</strong> {{ current_user.rating }}</p>
+        </div>
+    </div>
+
+    <h2 class="section-title">Requests Sent To You</h2>
+
+    {% if requests_data %}
+        {% for item in requests_data %}
+            <div class="request-item">
+                <h3>{{ item.problem_title }}</h3>
+                <p><strong>Description:</strong> {{ item.problem_description }}</p>
+                <p><strong>Customer ID:</strong> {{ item.customer_id }}</p>
+                <p><strong>Created:</strong> {{ item.created_at }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <h3>No requests yet</h3>
+            <p>Customers have not sent you any requests yet.</p>
+        </div>
+    {% endif %}
+{% endblock %}
