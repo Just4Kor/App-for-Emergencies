@@ -18,19 +18,29 @@
 
     <div class="detail-box">
         <h2 class="section-title">Send a Service Request</h2>
-        <p class="muted">Each user can save up to 5 requests.</p>
+        <p class="muted">
+            You can keep up to 5 requests. If you add a new one after that,
+            your oldest request will be deleted automatically.
+        </p>
 
         <form method="post">
             <div style="margin-bottom: 15px;">
                 <label for="problem_title">Problem title</label>
-                <input type="text" id="problem_title" name="problem_title"
-                       placeholder="Example: Leaking faucet">
+                <input
+                    type="text"
+                    id="problem_title"
+                    name="problem_title"
+                    placeholder="Example: Leaking faucet"
+                >
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label for="problem_description">Problem description</label>
-                <textarea id="problem_description" name="problem_description"
-                          placeholder="Describe the problem in detail..."></textarea>
+                <textarea
+                    id="problem_description"
+                    name="problem_description"
+                    placeholder="Describe the problem in detail..."
+                ></textarea>
             </div>
 
             <button class="btn" type="submit">Submit request</button>
