@@ -26,7 +26,12 @@
         <div id="customer-fields">
             <div style="margin-bottom: 15px;">
                 <label for="city">City</label>
-                <input type="text" id="city" name="city">
+                <select id="city" name="city">
+                    <option value="">Select city</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}">{{ location }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
 
@@ -43,7 +48,12 @@
 
             <div style="margin-bottom: 15px;">
                 <label for="location">Location</label>
-                <input type="text" id="location" name="location">
+                <select id="location" name="location">
+                    <option value="">Select location</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}">{{ location }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div style="margin-bottom: 15px;">
