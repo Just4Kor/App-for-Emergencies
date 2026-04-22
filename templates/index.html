@@ -18,9 +18,12 @@
                     <label for="specialty">Specialty</label>
                     <select name="specialty" id="specialty">
                         <option value="">All specialties</option>
-                        <option value="Plumber" {% if selected_specialty == "Plumber" %}selected{% endif %}>Plumber</option>
-                        <option value="Electrician" {% if selected_specialty == "Electrician" %}selected{% endif %}>Electrician</option>
-                        <option value="Mechanic" {% if selected_specialty == "Mechanic" %}selected{% endif %}>Mechanic</option>
+                        {% for specialty in specialties %}
+                            <option value="{{ specialty }}"
+                                {% if selected_specialty == specialty %}selected{% endif %}>
+                                {{ specialty }}
+                            </option>
+                        {% endfor %}
                     </select>
                 </div>
 
