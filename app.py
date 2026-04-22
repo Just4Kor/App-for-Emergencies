@@ -31,6 +31,16 @@ login_manager.login_view = "login"
 platform = Platform()
 rating_service = RatingService()
 
+SPECIALTIES = [
+    "Plumber",
+    "Electrician",
+    "Mechanic",
+    "Carpenter",
+    "Painter",
+    "Locksmith",
+    "HVAC Technician",
+]
+
 
 class CustomerAccount(UserMixin, db.Model):
     __tablename__ = "customers"
@@ -180,16 +190,12 @@ def seed_workers() -> None:
         return
 
     workers = [
-        WorkerFactory.create("plumber", 1, "John Smith", "Vilnius", 20, 4.5),
-        WorkerFactory.create("mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
-        WorkerFactory.create(
-            "electrician", 3, "Anna White", "Vilnius", 22, 4.9
-        ),
-        WorkerFactory.create("plumber", 4, "Laura Green", "Klaipeda", 18, 4.3),
-        WorkerFactory.create(
-            "electrician", 5, "Tomas Black", "Kaunas", 24, 4.6
-        ),
-        WorkerFactory.create("mechanic", 6, "Peter Stone", "Vilnius", 28, 4.8),
+        WorkerFactory.create("Plumber", 1, "John Smith", "Vilnius", 20, 4.5),
+        WorkerFactory.create("Mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
+        WorkerFactory.create("Electrician", 3, "Anna White", "Vilnius", 22, 4.9),
+        WorkerFactory.create("Carpenter", 4, "Laura Green", "Klaipeda", 18, 4.3),
+        WorkerFactory.create("Painter", 5, "Tomas Black", "Kaunas", 24, 4.6),
+        WorkerFactory.create("Locksmith", 6, "Peter Stone", "Vilnius", 28, 4.8),
     ]
 
     for worker in workers:
@@ -284,6 +290,7 @@ def home():
         workers=workers,
         selected_location=location,
         selected_specialty=specialty,
+        specialties=SPECIALTIES,
     )
 
 
@@ -298,12 +305,8 @@ def register():
             flash("Please fill in all required fields.", "error")
             return redirect(url_for("register"))
 
-        existing_customer = CustomerAccount.query.filter_by(
-            username=username
-        ).first()
-        existing_worker = WorkerAccount.query.filter_by(
-            username=username
-        ).first()
+        existing_customer = CustomerAccount.query.filter_by(username=username).first()
+        existing_worker = WorkerAccount.query.filter_by(username=username).first()
 
         if existing_customer or existing_worker:
             flash("Username already exists.", "error")
@@ -334,6 +337,10 @@ def register():
                 flash("Worker must fill all worker fields.", "error")
                 return redirect(url_for("register"))
 
+            if specialty not in SPECIALTIES:
+                flash("Invalid specialty selected.", "error")
+                return redirect(url_for("register"))
+
             try:
                 hourly_rate_value = float(hourly_rate)
             except ValueError:
@@ -362,7 +369,7 @@ def register():
         flash("Invalid role selected.", "error")
         return redirect(url_for("register"))
 
-    return render_template("register.html")
+    return render_template("register.html", specialties=SPECIALTIES)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -412,12 +419,8 @@ def profile():
             flash("Username cannot be empty.", "error")
             return redirect(url_for("profile"))
 
-        existing_customer = CustomerAccount.query.filter_by(
-            username=new_username
-        ).first()
-        existing_worker = WorkerAccount.query.filter_by(
-            username=new_username
-        ).first()
+        existing_customer = CustomerAccount.query.filter_by(username=new_username).first()
+        existing_worker = WorkerAccount.query.filter_by(username=new_username).first()
 
         username_taken_by_other_customer = (
             existing_customer is not None and
@@ -599,7 +602,6 @@ def worker_details(source: str, worker_id: int):
 
             score_raw = request.form.get("score", "").strip()
             comment = request.form.get("comment", "").strip()
-
             next_rating_id = WorkerRatingRecord.query.count() + 1
 
             try:
