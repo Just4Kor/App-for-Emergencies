@@ -35,9 +35,9 @@
                 <label for="specialty">Specialty</label>
                 <select id="specialty" name="specialty">
                     <option value="">Select specialty</option>
-                    <option value="Plumber">Plumber</option>
-                    <option value="Electrician">Electrician</option>
-                    <option value="Mechanic">Mechanic</option>
+                    {% for specialty in specialties %}
+                        <option value="{{ specialty }}">{{ specialty }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
