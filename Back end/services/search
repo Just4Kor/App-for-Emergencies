@@ -1,8 +1,27 @@
 class SearchEngine:
-    def filter_workers(self, workers, location=None):
+    def filter_workers(
+        self,
+        workers,
+        location,
+        specialty
+    ):
+        filtered_workers = workers
+
         if location:
-            return [w for w in workers if w.location == location]
-        return workers
+            filtered_workers = [
+                worker
+                for worker in filtered_workers
+                if worker.location.lower() == location.lower()
+            ]
+
+        if specialty:
+            filtered_workers = [
+                worker
+                for worker in filtered_workers
+                if worker.specialty.lower() == specialty.lower()
+            ]
+
+        return filtered_workers
 
     def sort_workers(self, workers):
-        return sorted(workers, key=lambda w: (-w.rating, w.rate))
+        return sorted(workers, key=lambda worker: (-worker.rating, worker.rate))
