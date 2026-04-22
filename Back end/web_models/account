@@ -3,17 +3,29 @@ from abc import ABC, abstractmethod
 
 class BaseAccount(ABC):
     def __init__(self, username, password_hash):
-        self._username = username
-        self._password_hash = password_hash
+        self.username = username
+        self.password_hash = password_hash
 
     @property
     def username(self):
         return self._username
 
+    @username.setter
+    def username(self, value):
+        if not value or not value.strip():
+            raise ValueError("Username cannot be empty.")
+        self._username = value.strip()
+
     @property
     def password_hash(self):
         return self._password_hash
 
+    @password_hash.setter
+    def password_hash(self, value):
+        if not value or not value.strip():
+            raise ValueError("Password hash cannot be empty.")
+        self._password_hash = value.strip()
+
     @abstractmethod
     def get_role(self):
-        """Return account role."""
+        """Return the account role."""
