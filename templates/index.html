@@ -8,9 +8,12 @@
                     <label for="location">Location</label>
                     <select name="location" id="location">
                         <option value="">All locations</option>
-                        <option value="Vilnius" {% if selected_location == "Vilnius" %}selected{% endif %}>Vilnius</option>
-                        <option value="Kaunas" {% if selected_location == "Kaunas" %}selected{% endif %}>Kaunas</option>
-                        <option value="Klaipeda" {% if selected_location == "Klaipeda" %}selected{% endif %}>Klaipeda</option>
+                        {% for location in locations %}
+                            <option value="{{ location }}"
+                                {% if selected_location == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                        {% endfor %}
                     </select>
                 </div>
 
