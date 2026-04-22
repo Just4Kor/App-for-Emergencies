@@ -12,7 +12,7 @@ from flask_login import (
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from factory.worker_factory import WorkerFactory
+from worker_create import WorkerFactory
 from models.person import ValidationError
 from models.rating import WorkerRating
 from services.platform import Platform
@@ -41,6 +41,17 @@ SPECIALTIES = [
     "HVAC Technician",
 ]
 
+LOCATIONS = [
+    "Vilnius",
+    "Kaunas",
+    "Klaipėda",
+    "Šiauliai",
+    "Panevėžys",
+    "Alytus",
+    "Marijampolė",
+    "Utena",
+]
+
 
 class CustomerAccount(UserMixin, db.Model):
     __tablename__ = "customers"
@@ -64,6 +75,9 @@ class CustomerAccount(UserMixin, db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
+
+    def get_id(self) -> str:
+        return f"customer:{self.id}"
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -100,6 +114,9 @@ class WorkerAccount(UserMixin, db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
+
+    def get_id(self) -> str:
+        return f"worker:{self.id}"
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -176,13 +193,20 @@ class WorkerRatingRecord(db.Model):
 
 
 @login_manager.user_loader
-def load_user(user_id):
-    customer = db.session.get(CustomerAccount, int(user_id))
-    if customer is not None:
-        return customer
+def load_user(user_id: str):
+    try:
+        role, raw_id = user_id.split(":", 1)
+        numeric_id = int(raw_id)
+    except (ValueError, AttributeError):
+        return None
 
-    worker = db.session.get(WorkerAccount, int(user_id))
-    return worker
+    if role == "customer":
+        return db.session.get(CustomerAccount, numeric_id)
+
+    if role == "worker":
+        return db.session.get(WorkerAccount, numeric_id)
+
+    return None
 
 
 def seed_workers() -> None:
@@ -194,8 +218,8 @@ def seed_workers() -> None:
         WorkerFactory.create("Mechanic", 2, "Mike Brown", "Kaunas", 25, 4.9),
         WorkerFactory.create("Electrician", 3, "Anna White", "Vilnius", 22, 4.9),
         WorkerFactory.create("Carpenter", 4, "Laura Green", "Klaipeda", 18, 4.3),
-        WorkerFactory.create("Painter", 5, "Tomas Black", "Kaunas", 24, 4.6),
-        WorkerFactory.create("Locksmith", 6, "Peter Stone", "Vilnius", 28, 4.8),
+        WorkerFactory.create("Painter", 5, "Tomas Black", "Siauliai", 24, 4.6),
+        WorkerFactory.create("Locksmith", 6, "Peter Stone", "Panevezys", 28, 4.8),
     ]
 
     for worker in workers:
@@ -291,6 +315,7 @@ def home():
         selected_location=location,
         selected_specialty=specialty,
         specialties=SPECIALTIES,
+        locations=LOCATIONS,
     )
 
 
@@ -319,6 +344,10 @@ def register():
                 flash("Please enter your city.", "error")
                 return redirect(url_for("register"))
 
+            if city not in LOCATIONS:
+                flash("Please choose a valid city.", "error")
+                return redirect(url_for("register"))
+
             user = CustomerAccount(username=username, city=city)
             user.set_password(password)
 
@@ -339,6 +368,10 @@ def register():
 
             if specialty not in SPECIALTIES:
                 flash("Invalid specialty selected.", "error")
+                return redirect(url_for("register"))
+
+            if location not in LOCATIONS:
+                flash("Invalid location selected.", "error")
                 return redirect(url_for("register"))
 
             try:
@@ -369,7 +402,11 @@ def register():
         flash("Invalid role selected.", "error")
         return redirect(url_for("register"))
 
-    return render_template("register.html", specialties=SPECIALTIES)
+    return render_template(
+        "register.html",
+        specialties=SPECIALTIES,
+        locations=LOCATIONS,
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -449,6 +486,9 @@ def profile():
             if not new_city:
                 flash("City cannot be empty.", "error")
                 return redirect(url_for("profile"))
+            if new_city not in LOCATIONS:
+                flash("Please choose a valid city.", "error")
+                return redirect(url_for("profile"))
             current_user.city = new_city
 
         if current_user.role == "worker":
@@ -457,6 +497,10 @@ def profile():
 
             if not new_location:
                 flash("Location cannot be empty.", "error")
+                return redirect(url_for("profile"))
+
+            if new_location not in LOCATIONS:
+                flash("Please choose a valid location.", "error")
                 return redirect(url_for("profile"))
 
             try:
@@ -492,6 +536,7 @@ def profile():
         "profile.html",
         request_count=request_count,
         ratings_count=ratings_count,
+        locations=LOCATIONS,
     )
 
 
