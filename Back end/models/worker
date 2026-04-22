@@ -1,36 +1,56 @@
-from abc import ABC, abstractmethod
-from models.person import Person
+from models.person import Person, ValidationError
 
 
-class Worker(Person, ABC):
-    def __init__(self, person_id, name, location, rate, rating):
+class Worker(Person):
+    def __init__(
+        self,
+        person_id,
+        name,
+        location,
+        rate,
+        rating,
+        specialty
+    ):
         super().__init__(person_id, name, location)
         self.rate = rate
         self.rating = rating
+        self.specialty = specialty
 
     @property
-    @abstractmethod
+    def rate(self):
+        return self._rate
+
+    @rate.setter
+    def rate(self, value):
+        if float(value) <= 0:
+            raise ValidationError("Rate must be greater than 0.")
+        self._rate = float(value)
+
+    @property
+    def rating(self):
+        return self._rating
+
+    @rating.setter
+    def rating(self, value):
+        numeric_value = float(value)
+        if numeric_value < 0 or numeric_value > 5:
+            raise ValidationError("Rating must be between 0 and 5.")
+        self._rating = numeric_value
+
+    @property
     def specialty(self):
-        pass
+        return self._specialty
+
+    @specialty.setter
+    def specialty(self, value):
+        if not value or not value.strip():
+            raise ValidationError("Specialty cannot be empty.")
+        self._specialty = value.strip()
 
     def get_profile_summary(self):
-        return f"{self.specialty} {self.name} {self.rate}€/h ⭐{self.rating}"
-
-
-class Plumber(Worker):
-    @property
-    def specialty(self):
-        return "Plumber"
-
-
-class Electrician(Worker):
-    @property
-    def specialty(self):
-        return "Electrician"
-
-
-class Mechanic(Worker):
-    @property
-    def specialty(self):
-        return "Mechanic"
-
+        return (
+            f"{self.specialty} {self.name} | "
+            f"{self.location} | "
+            f"{self.rate}€/h | "
+            f"⭐{self.rating}"
+        )
