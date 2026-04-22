@@ -40,24 +40,28 @@
             {% if current_user.role == "customer" %}
                 <div style="margin-bottom: 15px;">
                     <label for="city">Change city</label>
-                    <input
-                        type="text"
-                        id="city"
-                        name="city"
-                        value="{{ current_user.city }}"
-                    >
+                    <select id="city" name="city">
+                        {% for location in locations %}
+                            <option value="{{ location }}"
+                                {% if current_user.city == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
             {% endif %}
 
             {% if current_user.role == "worker" %}
                 <div style="margin-bottom: 15px;">
                     <label for="location">Change location</label>
-                    <input
-                        type="text"
-                        id="location"
-                        name="location"
-                        value="{{ current_user.location }}"
-                    >
+                    <select id="location" name="location">
+                        {% for location in locations %}
+                            <option value="{{ location }}"
+                                {% if current_user.location == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div style="margin-bottom: 15px;">
