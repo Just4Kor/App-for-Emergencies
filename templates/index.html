@@ -1,74 +1,74 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="filter-box">
-        <form method="get" action="{{ url_for('home') }}">
-            <div class="filter-grid">
-                <div>
-                    <label for="location">Location</label>
-                    <select name="location" id="location">
-                        <option value="">All locations</option>
-                        {% for location in locations %}
-                            <option value="{{ location }}"
-                                {% if selected_location == location %}selected{% endif %}>
-                                {{ location }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label for="specialty">Specialty</label>
-                    <select name="specialty" id="specialty">
-                        <option value="">All specialties</option>
-                        {% for specialty in specialties %}
-                            <option value="{{ specialty }}"
-                                {% if selected_specialty == specialty %}selected{% endif %}>
-                                {{ specialty }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <button class="btn" type="submit">Search workers</button>
-                </div>
+<div class="filter-box">
+    <form method="get" action="{{ url_for('home') }}">
+        <div class="filter-grid">
+            <div>
+                <label for="location">Location</label>
+                <select name="location" id="location">
+                    <option value="">All locations</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}"
+                            {% if selected_location == location %}selected{% endif %}>
+                            {{ location }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
-        </form>
-    </div>
 
-    <h2 class="section-title">Available Workers</h2>
+            <div>
+                <label for="specialty">Specialty</label>
+                <select name="specialty" id="specialty">
+                    <option value="">All specialties</option>
+                    {% for specialty in specialties %}
+                        <option value="{{ specialty }}"
+                            {% if selected_specialty == specialty %}selected{% endif %}>
+                            {{ specialty }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    {% if workers %}
-        <div class="card-grid">
-            {% for worker in workers %}
-                <div class="card">
-                    <span class="badge">{{ worker.specialty }}</span>
-                    <h3>{{ worker.name }}</h3>
+            <div>
+                <button class="btn" type="submit">Search workers</button>
+            </div>
+        </div>
+    </form>
+</div>
 
-                    <div class="worker-meta">
-                        <div><strong>Location:</strong> {{ worker.location }}</div>
-                        <div><strong>Hourly rate:</strong> €{{ worker.rate }}/hour</div>
-                        <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
-                    </div>
+<h2 class="section-title">Available Workers</h2>
 
-                    {% if current_user.is_authenticated and current_user.role == "customer" %}
-                        <a class="btn"
-                           href="{{ url_for('worker_details', source=worker.source, worker_id=worker.id) }}">
-                            View details
-                        </a>
-                    {% else %}
-                        <a class="btn" href="{{ url_for('login') }}">
-                            Login to request
-                        </a>
-                    {% endif %}
+{% if workers %}
+    <div class="card-grid">
+        {% for worker in workers %}
+            <div class="card">
+                <span class="badge">{{ worker.specialty }}</span>
+                <h3>{{ worker.username }}</h3>
+
+                <div class="worker-meta">
+                    <div><strong>Location:</strong> {{ worker.location }}</div>
+                    <div><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</div>
+                    <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-box">
-            <h3>No workers found</h3>
-            <p>Try another location or specialty.</p>
-        </div>
-    {% endif %}
+
+                {% if current_user.is_authenticated and current_user.role == "customer" %}
+                    <a class="btn"
+                       href="{{ url_for('worker_details', worker_id=worker.id) }}">
+                        View / Request
+                    </a>
+                {% elif not current_user.is_authenticated %}
+                    <a class="btn" href="{{ url_for('login') }}">
+                        Login to request
+                    </a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-box">
+        <h3>No workers found</h3>
+        <p>Try another location or specialty.</p>
+    </div>
+{% endif %}
 {% endblock %}
