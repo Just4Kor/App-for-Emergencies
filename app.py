@@ -10,8 +10,9 @@ from flask_login import (
     logout_user,
 )
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
 
+from factory.account_factory import AccountFactory
 from services.worker_file_service import (
     load_workers_from_file,
     save_worker_to_file,
@@ -52,6 +53,7 @@ CITIES = [
 
 class Account(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
+
     role = db.Column(db.String(20), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
@@ -66,6 +68,7 @@ class Account(UserMixin, db.Model):
 
 class ServiceRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default="Pending")
@@ -94,7 +97,7 @@ def import_workers_from_txt():
         worker = Account(
             role="worker",
             username=worker_data["username"],
-            password=generate_password_hash("worker123"),
+            password="imported_worker",
             specialty=worker_data["specialty"],
             location=worker_data["location"],
             hourly_rate=worker_data["hourly_rate"],
@@ -108,8 +111,6 @@ def import_workers_from_txt():
 
 @app.route("/")
 def home():
-    import_workers_from_txt()
-
     selected_location = request.args.get("location", "")
     selected_specialty = request.args.get("specialty", "")
 
@@ -142,24 +143,32 @@ def register():
         password = request.form["password"]
 
         existing_account = Account.query.filter_by(username=username).first()
+
         if existing_account:
             flash("Username already exists.", "error")
             return redirect(url_for("register"))
 
-        account = Account(
-            role=role,
-            username=username,
-            password=generate_password_hash(password),
-        )
-
         if role == "customer":
-            account.city = request.form["city"]
+            account = AccountFactory.create_customer(
+                Account,
+                username,
+                password,
+                request.form["city"],
+            )
 
-        if role == "worker":
-            account.specialty = request.form["specialty"]
-            account.location = request.form["location"]
-            account.hourly_rate = float(request.form["hourly_rate"])
-            account.rating = 5.0
+        elif role == "worker":
+            account = AccountFactory.create_worker(
+                Account,
+                username,
+                password,
+                request.form["specialty"],
+                request.form["location"],
+                float(request.form["hourly_rate"]),
+            )
+
+        else:
+            flash("Invalid account type.", "error")
+            return redirect(url_for("register"))
 
         db.session.add(account)
         db.session.commit()
@@ -302,6 +311,7 @@ def update_request(request_id):
         service_request.status = "Denied"
 
     db.session.commit()
+
     flash("Request updated.", "success")
     return redirect(url_for("worker_dashboard"))
 
@@ -320,6 +330,7 @@ def profile():
             current_user.hourly_rate = float(request.form["hourly_rate"])
 
         db.session.commit()
+
         flash("Profile updated.", "success")
         return redirect(url_for("profile"))
 
@@ -345,4 +356,3 @@ if __name__ == "__main__":
         import_workers_from_txt()
 
     app.run(debug=True)
-    
