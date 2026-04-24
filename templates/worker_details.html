@@ -1,108 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="detail-box">
-        <span class="badge">{{ worker.specialty }}</span>
-        <h2 class="section-title">{{ worker.name }}</h2>
+<div class="box">
+    <span class="badge">{{ worker.specialty }}</span>
+    <h2>{{ worker.username }}</h2>
+    <p><strong>Location:</strong> {{ worker.location }}</p>
+    <p><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</p>
+    <p><strong>Rating:</strong> {{ worker.rating }} / 5</p>
 
-        <div class="worker-meta">
-            <div><strong>Location:</strong> {{ worker.location }}</div>
-            <div><strong>Hourly rate:</strong> €{{ worker.rate }}/hour</div>
-            <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
-        </div>
+    <a class="btn" href="{{ url_for('home') }}">Back</a>
+</div>
 
-        <a class="btn btn-secondary" href="{{ url_for('home') }}">
-            Back to workers
-        </a>
-    </div>
+<div class="box">
+    <h2>Send Request</h2>
 
-    <div class="detail-box">
-        <h2 class="section-title">Send a Service Request</h2>
-        <p class="muted">
-            You can keep up to 5 requests. If you add a new one after that,
-            your oldest request will be deleted automatically.
-        </p>
+    <form method="post">
+        <label for="title">Problem title</label>
+        <input
+            type="text"
+            id="title"
+            name="title"
+            placeholder="Example: Leaking faucet"
+            required
+        >
 
-        <form method="post">
-            <input type="hidden" name="action" value="create_request">
+        <label for="description">Problem description</label>
+        <textarea
+            id="description"
+            name="description"
+            placeholder="Describe your problem..."
+            required
+        ></textarea>
 
-            <div style="margin-bottom: 15px;">
-                <label for="problem_title">Problem title</label>
-                <input
-                    type="text"
-                    id="problem_title"
-                    name="problem_title"
-                    placeholder="Example: Leaking faucet"
-                >
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label for="problem_description">Problem description</label>
-                <textarea
-                    id="problem_description"
-                    name="problem_description"
-                    placeholder="Describe the problem in detail..."
-                ></textarea>
-            </div>
-
-            <button class="btn" type="submit">Submit request</button>
-        </form>
-    </div>
-
-    {% if worker.source == "db" %}
-        <div class="rating-box">
-            <h2 class="section-title">Rate this worker</h2>
-            <p class="small-text">
-                You can submit one rating per registered worker. Submitting again updates your rating.
-            </p>
-
-            <form method="post">
-                <input type="hidden" name="action" value="rate_worker">
-
-                <div style="margin-bottom: 15px;">
-                    <label for="score">Score</label>
-                    <select id="score" name="score">
-                        <option value="1" {% if existing_rating and existing_rating.score == 1 %}selected{% endif %}>1</option>
-                        <option value="2" {% if existing_rating and existing_rating.score == 2 %}selected{% endif %}>2</option>
-                        <option value="3" {% if existing_rating and existing_rating.score == 3 %}selected{% endif %}>3</option>
-                        <option value="4" {% if existing_rating and existing_rating.score == 4 %}selected{% endif %}>4</option>
-                        <option value="5" {% if existing_rating and existing_rating.score == 5 %}selected{% endif %}>5</option>
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label for="comment">Comment</label>
-                    <textarea
-                        id="comment"
-                        name="comment"
-                        placeholder="Optional comment"
-                    >{% if existing_rating and existing_rating.comment %}{{ existing_rating.comment }}{% endif %}</textarea>
-                </div>
-
-                <button class="btn" type="submit">
-                    {% if already_rated %}Update rating{% else %}Submit rating{% endif %}
-                </button>
-            </form>
-        </div>
-
-        <div class="rating-box">
-            <h2 class="section-title">Customer Ratings</h2>
-
-            {% if ratings %}
-                {% for item in ratings %}
-                    <div class="request-item">
-                        <p><strong>Score:</strong> {{ item.score }} / 5</p>
-                        <p><strong>Customer ID:</strong> {{ item.customer_id }}</p>
-                        <p><strong>Comment:</strong> {{ item.comment if item.comment else "No comment" }}</p>
-                        <p><strong>Created:</strong> {{ item.created_at }}</p>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-box">
-                    <h3>No ratings yet</h3>
-                    <p>This worker has not been rated yet.</p>
-                </div>
-            {% endif %}
-        </div>
-    {% endif %}
+        <button class="btn" type="submit">Submit request</button>
+    </form>
+</div>
 {% endblock %}
