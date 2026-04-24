@@ -1,198 +1,105 @@
-import json
-import os
-import tempfile
 import unittest
 
-from worker_create import WorkerFactory
-from models.person import ValidationError
-from models.rating import WorkerRating
-from models.request import ServiceRequest
 from models.user import User
+from models.worker import Worker
+from models.request import ServiceRequest
+from models.rating import WorkerRating
 from services.platform import Platform
-from services.rating_service import RatingService
-from services.search import SearchEngine
-from json_storage import JsonStorage
 
 
-class TestUserModel(unittest.TestCase):
-    def setUp(self):
-        self.user = User(1, "Alice", "Vilnius", "Vilnius")
+class TestUser(unittest.TestCase):
 
-    def test_user_creation(self):
-        self.assertEqual(self.user.person_id, 1)
-        self.assertEqual(self.user.name, "Alice")
-        self.assertEqual(self.user.location, "Vilnius")
-        self.assertEqual(self.user.city, "Vilnius")
+    def test_create_user(self):
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
 
-    def test_invalid_city_raises_error(self):
-        with self.assertRaises(ValidationError):
-            User(2, "Bob", "Kaunas", "")
+        self.assertEqual(user.name, "Alisa")
+        self.assertEqual(user.city, "Vilnius")
 
+    def test_add_request_limit(self):
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
 
-class TestServiceRequestModel(unittest.TestCase):
-    def test_request_creation(self):
-        request_item = ServiceRequest(
-            request_id=1,
-            problem_title="Broken sink",
-            problem_description="The sink is blocked and leaking.",
-            worker_name="John",
-            worker_specialty="Plumber",
-            worker_location="Vilnius",
-            hourly_rate=20,
-            rating=4.5,
-        )
+        for i in range(6):
+            req = ServiceRequest(i, user, worker, "Fix", "Leak")
+            user.add_request(req)
 
-        self.assertEqual(request_item.request_id, 1)
-        self.assertEqual(request_item.problem_title, "Broken sink")
-        self.assertEqual(request_item.worker_name, "John")
-        self.assertIsNotNone(request_item.created_at)
+        self.assertEqual(len(user.requests), 5)
 
 
-class TestWorkerFactory(unittest.TestCase):
-    def test_create_plumber(self):
-        worker = WorkerFactory.create("Plumber", 1, "John", "Vilnius", 20, 4.5)
-        self.assertEqual(worker.specialty, "Plumber")
-        self.assertEqual(worker.name, "John")
+class TestWorker(unittest.TestCase):
 
-    def test_create_new_specialty(self):
-        worker = WorkerFactory.create("Carpenter", 2, "Mark", "Kaunas", 30, 4.4)
-        self.assertEqual(worker.specialty, "Carpenter")
+    def test_worker_creation(self):
+        worker = Worker(1, "Bob", "Kaunas", "Mechanic", 25)
 
-    def test_invalid_rate_raises_error(self):
-        with self.assertRaises(ValidationError):
-            WorkerFactory.create("Painter", 3, "Tom", "Vilnius", 0, 4.0)
+        self.assertEqual(worker.specialty, "Mechanic")
+        self.assertEqual(worker.rate, 25)
+
+    def test_invalid_rate(self):
+        with self.assertRaises(ValueError):
+            Worker(1, "Rokas", "Kaunas", "Mechanic", -5)
+
+    def test_invalid_rating(self):
+        worker = Worker(1, "Rokas", "Kaunas", "Mechanic", 25)
+
+        with self.assertRaises(ValueError):
+            worker.update_rating(6)
 
 
-class TestSearchEngine(unittest.TestCase):
-    def setUp(self):
-        self.search_engine = SearchEngine()
-        self.w1 = WorkerFactory.create("Plumber", 1, "John", "Vilnius", 20, 4.5)
-        self.w2 = WorkerFactory.create("Mechanic", 2, "Mike", "Kaunas", 25, 4.9)
-        self.w3 = WorkerFactory.create("Electrician", 3, "Anna", "Vilnius", 22, 4.9)
-        self.w4 = WorkerFactory.create("Carpenter", 4, "Mark", "Vilnius", 19, 4.3)
-        self.workers = [self.w1, self.w2, self.w3, self.w4]
+class TestRequest(unittest.TestCase):
 
-    def test_filter_workers_by_location(self):
-        result = self.search_engine.filter_workers(self.workers, location="Vilnius")
-        self.assertEqual(len(result), 3)
+    def test_request_status(self):
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
 
-    def test_filter_workers_by_specialty(self):
-        result = self.search_engine.filter_workers(self.workers, specialty="Carpenter")
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].name, "Mark")
+        req = ServiceRequest(1, user, worker, "Fix", "Leak")
 
-    def test_sort_workers(self):
-        result = self.search_engine.sort_workers(self.workers)
-        self.assertEqual(result[0].name, "Anna")
-        self.assertEqual(result[1].name, "Mike")
+        req.accept()
+        self.assertEqual(req.status, "Accepted")
+
+        req.deny()
+        self.assertEqual(req.status, "Denied")
+
+
+class TestRating(unittest.TestCase):
+
+    def test_rating_creation(self):
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
+
+        rating = WorkerRating(user, worker, 5, "Great")
+
+        self.assertEqual(rating.score, 5)
+
+    def test_invalid_rating(self):
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
+
+        with self.assertRaises(ValueError):
+            WorkerRating(user, worker, 6)
 
 
 class TestPlatform(unittest.TestCase):
-    def setUp(self):
-        self.platform = Platform()
-        self.w1 = WorkerFactory.create("Plumber", 1, "John", "Vilnius", 20, 4.5)
-        self.w2 = WorkerFactory.create("Mechanic", 2, "Mike", "Kaunas", 25, 4.9)
-        self.w3 = WorkerFactory.create("Carpenter", 3, "Mark", "Vilnius", 19, 4.4)
-
-        self.platform.add_worker(self.w1)
-        self.platform.add_worker(self.w2)
-        self.platform.add_worker(self.w3)
 
     def test_add_worker(self):
-        self.assertEqual(len(self.platform.workers), 3)
+        platform = Platform()
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
 
-    def test_search_workers_by_location(self):
-        result = self.platform.search_workers(location="Vilnius")
-        self.assertEqual(len(result), 2)
+        platform.add_worker(worker)
 
-    def test_search_workers_by_specialty(self):
-        result = self.platform.search_workers(specialty="Carpenter")
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].name, "Mark")
+        self.assertEqual(len(platform.workers), 1)
 
+    def test_create_request(self):
+        platform = Platform()
+        user = User(1, "Alisa", "Vilnius", "Vilnius")
+        worker = Worker(1, "Rokas", "Vilnius", "Plumber", 20)
 
-class TestRatingModel(unittest.TestCase):
-    def test_rating_creation(self):
-        rating = WorkerRating(
-            rating_id=1,
-            customer_id=1,
-            worker_id=2,
-            score=5,
-            comment="Great service"
-        )
-        self.assertEqual(rating.score, 5)
-        self.assertEqual(rating.comment, "Great service")
+        platform.add_user(user)
+        platform.add_worker(worker)
 
-    def test_invalid_score_raises_error(self):
-        with self.assertRaises(ValidationError):
-            WorkerRating(
-                rating_id=1,
-                customer_id=1,
-                worker_id=2,
-                score=6,
-                comment="Too high"
-            )
+        req = platform.create_request(user, worker, "Fix", "Leak")
 
-
-class TestRatingService(unittest.TestCase):
-    def setUp(self):
-        self.service = RatingService()
-
-    def test_add_rating(self):
-        rating = WorkerRating(1, 1, 10, 5, "Excellent")
-        self.service.add_rating(rating)
-        self.assertEqual(len(self.service.ratings), 1)
-
-    def test_update_existing_rating(self):
-        rating_1 = WorkerRating(1, 1, 10, 4, "Good")
-        rating_2 = WorkerRating(2, 1, 10, 5, "Excellent")
-
-        self.service.add_rating(rating_1)
-        self.service.add_rating(rating_2)
-
-        self.assertEqual(len(self.service.ratings), 1)
-        self.assertEqual(self.service.ratings[0].score, 5)
-
-    def test_average_rating(self):
-        self.service.add_rating(WorkerRating(1, 1, 10, 4, "Good"))
-        self.service.add_rating(WorkerRating(2, 2, 10, 5, "Excellent"))
-        self.assertEqual(self.service.get_average_rating(10), 4.5)
-
-
-class TestJsonStorage(unittest.TestCase):
-    def setUp(self):
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.temp_file.close()
-        self.storage = JsonStorage(self.temp_file.name)
-
-    def tearDown(self):
-        if os.path.exists(self.temp_file.name):
-            os.remove(self.temp_file.name)
-
-    def test_save_and_load_data(self):
-        data = {
-            "workers": [
-                {
-                    "name": "John",
-                    "location": "Vilnius",
-                    "rate": 20,
-                    "rating": 4.5,
-                    "specialty": "Plumber",
-                }
-            ]
-        }
-        self.storage.save(data)
-        loaded_data = self.storage.load()
-        self.assertEqual(data, loaded_data)
-
-    def test_saved_file_contains_valid_json(self):
-        data = {"workers": [{"name": "Anna"}]}
-        self.storage.save(data)
-
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            parsed = json.load(file)
-
-        self.assertEqual(parsed["workers"][0]["name"], "Anna")
+        self.assertEqual(req.title, "Fix")
+        self.assertEqual(len(platform.requests), 1)
 
 
 if __name__ == "__main__":
