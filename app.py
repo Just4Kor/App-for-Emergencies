@@ -12,9 +12,10 @@ from flask_login import (
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from worker_create import WorkerFactory
+from factory.worker_factory import WorkerFactory
 from models.person import ValidationError
 from models.rating import WorkerRating
+from models.request_status import RequestStatus
 from services.platform import Platform
 from services.rating_service import RatingService
 
@@ -29,7 +30,6 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 platform = Platform()
-rating_service = RatingService()
 
 SPECIALTIES = [
     "Plumber",
@@ -44,11 +44,11 @@ SPECIALTIES = [
 LOCATIONS = [
     "Vilnius",
     "Kaunas",
-    "Klaipėda",
-    "Šiauliai",
-    "Panevėžys",
+    "Klaipeda",
+    "Siauliai",
+    "Panevezys",
     "Alytus",
-    "Marijampolė",
+    "Marijampole",
     "Utena",
 ]
 
@@ -140,6 +140,11 @@ class ServiceRequestRecord(db.Model):
     worker_location = db.Column(db.String(120), nullable=False)
     hourly_rate = db.Column(db.Float, nullable=False)
     rating = db.Column(db.Float, nullable=False)
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default=RequestStatus.PENDING,
+    )
     created_at = db.Column(
         db.DateTime,
         nullable=False,
@@ -235,12 +240,11 @@ def get_registered_workers():
 
 
 def refresh_worker_rating(worker: WorkerAccount) -> None:
-    rating_service_local = RatingService()
-
+    rating_service = RatingService()
     records = WorkerRatingRecord.query.filter_by(worker_id=worker.id).all()
 
     for record in records:
-        oop_rating = WorkerRating(
+        rating = WorkerRating(
             rating_id=record.id,
             customer_id=record.customer_id,
             worker_id=record.worker_id,
@@ -248,9 +252,9 @@ def refresh_worker_rating(worker: WorkerAccount) -> None:
             comment=record.comment or "",
             created_at=record.created_at.isoformat(),
         )
-        rating_service_local.add_rating(oop_rating)
+        rating_service.add_rating(rating)
 
-    average = rating_service_local.get_average_rating(worker.id)
+    average = rating_service.get_average_rating(worker.id)
     worker.rating = round(average, 2) if average > 0 else 5.0
     db.session.commit()
 
@@ -262,12 +266,9 @@ def home():
     location = request.args.get("location", "").strip()
     specialty = request.args.get("specialty", "").strip()
 
-    seed_workers_list = get_seed_workers()
-    registered_workers = get_registered_workers()
-
     workers = []
 
-    for worker in seed_workers_list:
+    for worker in get_seed_workers():
         workers.append(
             {
                 "id": worker.person_id,
@@ -280,7 +281,7 @@ def home():
             }
         )
 
-    for worker in registered_workers:
+    for worker in get_registered_workers():
         workers.append(
             {
                 "id": worker.id,
@@ -295,15 +296,13 @@ def home():
 
     if location:
         workers = [
-            worker
-            for worker in workers
+            worker for worker in workers
             if worker["location"].lower() == location.lower()
         ]
 
     if specialty:
         workers = [
-            worker
-            for worker in workers
+            worker for worker in workers
             if worker["specialty"].lower() == specialty.lower()
         ]
 
@@ -340,10 +339,6 @@ def register():
         if role == "customer":
             city = request.form.get("city", "").strip()
 
-            if not city:
-                flash("Please enter your city.", "error")
-                return redirect(url_for("register"))
-
             if city not in LOCATIONS:
                 flash("Please choose a valid city.", "error")
                 return redirect(url_for("register"))
@@ -361,10 +356,6 @@ def register():
             specialty = request.form.get("specialty", "").strip()
             location = request.form.get("location", "").strip()
             hourly_rate = request.form.get("hourly_rate", "").strip()
-
-            if not specialty or not location or not hourly_rate:
-                flash("Worker must fill all worker fields.", "error")
-                return redirect(url_for("register"))
 
             if specialty not in SPECIALTIES:
                 flash("Invalid specialty selected.", "error")
@@ -483,21 +474,16 @@ def profile():
 
         if current_user.role == "customer":
             new_city = request.form.get("city", "").strip()
-            if not new_city:
-                flash("City cannot be empty.", "error")
-                return redirect(url_for("profile"))
+
             if new_city not in LOCATIONS:
                 flash("Please choose a valid city.", "error")
                 return redirect(url_for("profile"))
+
             current_user.city = new_city
 
         if current_user.role == "worker":
             new_location = request.form.get("location", "").strip()
             new_hourly_rate = request.form.get("hourly_rate", "").strip()
-
-            if not new_location:
-                flash("Location cannot be empty.", "error")
-                return redirect(url_for("profile"))
 
             if new_location not in LOCATIONS:
                 flash("Please choose a valid location.", "error")
@@ -521,12 +507,13 @@ def profile():
         return redirect(url_for("profile"))
 
     request_count = 0
+    ratings_count = 0
+
     if current_user.role == "customer":
         request_count = ServiceRequestRecord.query.filter_by(
             customer_id=current_user.id
         ).count()
 
-    ratings_count = 0
     if current_user.role == "worker":
         ratings_count = WorkerRatingRecord.query.filter_by(
             worker_id=current_user.id
@@ -567,6 +554,7 @@ def worker_details(source: str, worker_id: int):
 
     elif source == "db":
         worker = db.session.get(WorkerAccount, worker_id)
+
         if worker is not None:
             worker_account_id = worker.id
             existing_rating = WorkerRatingRecord.query.filter_by(
@@ -624,6 +612,7 @@ def worker_details(source: str, worker_id: int):
                 worker_location=worker_data["location"],
                 hourly_rate=worker_data["rate"],
                 rating=worker_data["rating"],
+                status=RequestStatus.PENDING,
                 customer_id=current_user.id,
                 worker_account_id=worker_account_id,
             )
@@ -692,6 +681,7 @@ def worker_details(source: str, worker_id: int):
             )
 
     ratings = []
+
     if worker_account_id is not None:
         records = WorkerRatingRecord.query.filter_by(
             worker_id=worker_account_id
@@ -751,6 +741,7 @@ def worker_dashboard():
     ).order_by(WorkerRatingRecord.created_at.desc()).all()
 
     ratings = []
+
     for record in rating_records:
         ratings.append(
             WorkerRating(
@@ -768,6 +759,41 @@ def worker_dashboard():
         requests_data=requests_data,
         ratings=ratings,
     )
+
+
+@app.route("/update_request_status/<int:request_id>", methods=["POST"])
+@login_required
+def update_request_status(request_id: int):
+    if current_user.role != "worker":
+        flash("Only workers can update request status.", "error")
+        return redirect(url_for("home"))
+
+    action = request.form.get("action", "").strip()
+
+    request_item = ServiceRequestRecord.query.filter_by(
+        id=request_id,
+        worker_account_id=current_user.id,
+    ).first()
+
+    if request_item is None:
+        flash("Request not found.", "error")
+        return redirect(url_for("worker_dashboard"))
+
+    status = RequestStatus(request_item.status)
+
+    if action == "accept":
+        status.accept()
+    elif action == "deny":
+        status.deny()
+    else:
+        flash("Invalid action.", "error")
+        return redirect(url_for("worker_dashboard"))
+
+    request_item.status = status.status
+    db.session.commit()
+
+    flash(f"Request marked as {status.status}.", "success")
+    return redirect(url_for("worker_dashboard"))
 
 
 @app.route("/delete_request/<int:request_id>", methods=["POST"])
