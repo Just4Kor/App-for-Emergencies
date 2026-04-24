@@ -1,82 +1,82 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="profile-box">
-        <h2 class="section-title">My Profile</h2>
+<div class="profile-box">
+    <h2 class="section-title">My Profile</h2>
 
-        <div class="profile-info">
-            <p><strong>User ID:</strong> {{ current_user.id }}</p>
-            <p><strong>Username:</strong> {{ current_user.username }}</p>
+    <div class="profile-info">
+        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <p><strong>Role:</strong> {{ current_user.role }}</p>
 
-            {% if current_user.role == "customer" %}
-                <p><strong>City:</strong> {{ current_user.city }}</p>
-                <p><strong>Saved requests:</strong> {{ request_count }} / 5</p>
-            {% endif %}
+        {% if current_user.role == "customer" %}
+            <p><strong>City:</strong> {{ current_user.city }}</p>
+            <p><strong>Saved requests:</strong> {{ request_count }} / 5</p>
+        {% endif %}
 
-            {% if current_user.role == "worker" %}
-                <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
-                <p><strong>Location:</strong> {{ current_user.location }}</p>
-                <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
-                <p><strong>Average rating:</strong> {{ current_user.rating }} / 5</p>
-                <p><strong>Total ratings:</strong> {{ ratings_count }}</p>
-            {% endif %}
-        </div>
+        {% if current_user.role == "worker" %}
+            <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
+            <p><strong>Location:</strong> {{ current_user.location }}</p>
+            <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
+            <p><strong>Rating:</strong> {{ current_user.rating }} / 5</p>
+        {% endif %}
     </div>
+</div>
 
-    <div class="profile-box">
-        <h2 class="section-title">Edit Profile</h2>
+<div class="profile-box">
+    <h2 class="section-title">Edit Profile</h2>
 
-        <form method="post">
+    <form method="post">
+        <div style="margin-bottom: 15px;">
+            <label for="username">Username</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                value="{{ current_user.username }}"
+                required
+            >
+        </div>
+
+        {% if current_user.role == "customer" %}
             <div style="margin-bottom: 15px;">
-                <label for="username">Change username</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ current_user.username }}"
-                >
+                <label for="city">City</label>
+                <select id="city" name="city">
+                    {% for city in cities %}
+                        <option value="{{ city }}"
+                            {% if current_user.city == city %}selected{% endif %}>
+                            {{ city }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+
+        {% if current_user.role == "worker" %}
+            <div style="margin-bottom: 15px;">
+                <label for="location">Location</label>
+                <select id="location" name="location">
+                    {% for location in locations %}
+                        <option value="{{ location }}"
+                            {% if current_user.location == location %}selected{% endif %}>
+                            {{ location }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
 
-            {% if current_user.role == "customer" %}
-                <div style="margin-bottom: 15px;">
-                    <label for="city">Change city</label>
-                    <select id="city" name="city">
-                        {% for location in locations %}
-                            <option value="{{ location }}"
-                                {% if current_user.city == location %}selected{% endif %}>
-                                {{ location }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            {% endif %}
+            <div style="margin-bottom: 15px;">
+                <label for="hourly_rate">Hourly rate</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    id="hourly_rate"
+                    name="hourly_rate"
+                    value="{{ current_user.hourly_rate }}"
+                >
+            </div>
+        {% endif %}
 
-            {% if current_user.role == "worker" %}
-                <div style="margin-bottom: 15px;">
-                    <label for="location">Change location</label>
-                    <select id="location" name="location">
-                        {% for location in locations %}
-                            <option value="{{ location }}"
-                                {% if current_user.location == location %}selected{% endif %}>
-                                {{ location }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label for="hourly_rate">Change hourly rate</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        id="hourly_rate"
-                        name="hourly_rate"
-                        value="{{ current_user.hourly_rate }}"
-                    >
-                </div>
-            {% endif %}
-
-            <button class="btn" type="submit">Save changes</button>
-        </form>
-    </div>
+        <button class="btn" type="submit">Save changes</button>
+    </form>
+</div>
 {% endblock %}
