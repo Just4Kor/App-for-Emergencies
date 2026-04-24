@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergency Services Finder</title>
     <style>
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
             font-family: Arial, sans-serif;
         }
 
         body {
+            margin: 0;
             background: #f4f7fb;
             color: #1f2937;
         }
@@ -24,160 +22,77 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .navbar h1 {
-            font-size: 24px;
         }
 
         .navbar a {
             color: white;
             text-decoration: none;
-            margin-left: 16px;
+            margin-left: 15px;
             font-weight: bold;
         }
 
         .hero {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: #2563eb;
             color: white;
-            padding: 60px 40px;
             text-align: center;
-        }
-
-        .hero h2 {
-            font-size: 38px;
-            margin-bottom: 15px;
-        }
-
-        .hero p {
-            font-size: 18px;
-            max-width: 700px;
-            margin: 0 auto;
+            padding: 50px 20px;
         }
 
         .container {
             width: 90%;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 30px auto;
         }
 
-        .flash-wrapper {
+        .card,
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
             margin-bottom: 20px;
         }
 
-        .flash {
-            padding: 14px 18px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .flash.success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .flash.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .filter-box,
-        .detail-box,
-        .auth-box,
-        .request-item,
-        .empty-box,
-        .card,
-        .profile-box,
-        .rating-box {
-            background: white;
-            border-radius: 18px;
-            padding: 20px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-        }
-
-        .filter-box,
-        .detail-box,
-        .auth-box,
-        .profile-box,
-        .rating-box {
-            margin-bottom: 24px;
-        }
-
-        .auth-box,
-        .profile-box {
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .filter-grid,
-        .form-grid {
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            align-items: end;
-        }
-
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 20px;
         }
 
         label {
-            display: block;
-            margin-bottom: 8px;
             font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
         }
 
         input,
         select,
         textarea {
             width: 100%;
-            padding: 12px;
+            padding: 11px;
+            margin-bottom: 15px;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            font-size: 15px;
         }
 
         textarea {
-            min-height: 120px;
-            resize: vertical;
+            min-height: 110px;
         }
 
         .btn {
-            display: inline-block;
             background: #2563eb;
             color: white;
-            text-decoration: none;
             border: none;
-            padding: 12px 18px;
+            padding: 11px 16px;
             border-radius: 10px;
-            cursor: pointer;
+            text-decoration: none;
             font-weight: bold;
-        }
-
-        .btn:hover {
-            background: #1d4ed8;
-        }
-
-        .btn-secondary {
-            background: #475569;
-        }
-
-        .btn-secondary:hover {
-            background: #334155;
+            cursor: pointer;
+            display: inline-block;
         }
 
         .btn-danger {
             background: #dc2626;
-        }
-
-        .btn-danger:hover {
-            background: #b91c1c;
         }
 
         .badge {
@@ -188,60 +103,47 @@
             border-radius: 999px;
             font-size: 13px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
-        .worker-meta {
-            line-height: 1.8;
-            margin-bottom: 16px;
+        .flash {
+            padding: 12px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
 
-        .section-title {
-            margin-bottom: 18px;
-            font-size: 28px;
-            color: #0f172a;
-        }
-
-        .request-item {
-            margin-bottom: 16px;
-        }
-
-        .muted {
-            color: #64748b;
-            margin-top: 8px;
-        }
-
-        .profile-info {
-            line-height: 1.9;
-            margin-bottom: 20px;
-        }
-
-        .small-text {
-            color: #64748b;
-            font-size: 14px;
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         footer {
-            margin-top: 40px;
-            padding: 24px;
             text-align: center;
+            padding: 25px;
             color: #64748b;
         }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <h1>Emergency Services Finder</h1>
+        <h2>Emergency Services Finder</h2>
         <div>
             <a href="{{ url_for('home') }}">Home</a>
+
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('profile') }}">Profile</a>
+
                 {% if current_user.role == "customer" %}
-                    <a href="{{ url_for('requests_page') }}">My Requests</a>
+                    <a href="{{ url_for('my_requests') }}">My Requests</a>
                 {% endif %}
+
                 {% if current_user.role == "worker" %}
                     <a href="{{ url_for('worker_dashboard') }}">Worker Dashboard</a>
                 {% endif %}
+
                 <a href="{{ url_for('logout') }}">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
@@ -251,29 +153,22 @@
     </div>
 
     <div class="hero">
-        <h2>Find a trusted engineer fast</h2>
-        <p>
-            Search for plumbers, electricians, and mechanics by
-            location, hourly rate, and rating.
-        </p>
+        <h1>Find emergency service workers fast</h1>
+        <p>Search plumbers, electricians, mechanics, and more.</p>
     </div>
 
     <div class="container">
-        <div class="flash-wrapper">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
 
         {% block content %}{% endblock %}
     </div>
 
     <footer>
-        Python OOP Coursework Frontend with Flask
+        Python OOP Coursework Website
     </footer>
 </body>
 </html>
