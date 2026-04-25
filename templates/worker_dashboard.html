@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="box">
-    <h2>Worker Dashboard</h2>
-    <p><strong>Username:</strong> {{ current_user.username }}</p>
-    <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
-    <p><strong>Location:</strong> {{ current_user.location }}</p>
-    <p><strong>Hourly rate:</strong> €{{ current_user.hourly_rate }}/hour</p>
-    <p><strong>Rating:</strong> {{ current_user.rating }} / 5</p>
+<div class="profile-box">
+    <h2 class="section-title">Worker Dashboard</h2>
+
+    <p><strong>Username:</strong> {{ worker.username }}</p>
+    <p><strong>Specialty:</strong> {{ worker.specialty }}</p>
+    <p><strong>Location:</strong> {{ worker.location }}</p>
+    <p><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</p>
+    <p><strong>Rating:</strong> {{ worker.rating }} / 5</p>
 </div>
 
-<h2>Requests Sent To You</h2>
+<h2 class="section-title">Requests Sent To You</h2>
 
 {% if requests_data %}
     {% for item in requests_data %}
-        <div class="card">
+        <div class="request-item">
             <h3>{{ item.title }}</h3>
+
+            <p><strong>Address:</strong> {{ item.address }}</p>
             <p><strong>Description:</strong> {{ item.description }}</p>
             <p><strong>Status:</strong> {{ item.status }}</p>
             <p><strong>Customer ID:</strong> {{ item.customer_id }}</p>
-            <p><strong>Created:</strong> {{ item.created_at }}</p>
 
             {% if item.status == "Pending" %}
                 <form
@@ -43,8 +45,8 @@
         </div>
     {% endfor %}
 {% else %}
-    <div class="box">
-        <h3>No requests yet.</h3>
+    <div class="empty-box">
+        <h3>No requests yet</h3>
     </div>
 {% endif %}
 {% endblock %}
