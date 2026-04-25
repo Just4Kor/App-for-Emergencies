@@ -1,8 +1,3 @@
-Janas Janusevičius,Plumber,Vilnius,30.0,5.0
-Alisa Alison,Electrician,Klaipėda,25.0,5.0
-Jonas Jonavičius,Mechanic,Kaunas,50.0,5.0
-Marius Mariusevičius,Carpenter,Šiauliai,35.0,4.9
-Rokas Rokinis,HVAC technician,Utena,45.0,4.8
-Sofija Sofjan,Painter,Vilnius,35.0,5.0
-Simona Simonaitytė,Locksmith,Panevėžys,20.0,5.0
-Marija Mijovič,Electrician,Vilnius,45.0,5.0
+1,Jonas Jonavičius,Jonas,Plumber,Vilnius,35,5.0
+2,Rokas Rokinis,Rokas,Carpenter,Kaunas,15,4.9
+
