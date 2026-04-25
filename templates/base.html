@@ -45,7 +45,13 @@
         }
 
         .card,
-        .box {
+        .box,
+        .filter-box,
+        .auth-box,
+        .profile-box,
+        .detail-box,
+        .request-item,
+        .empty-box {
             background: white;
             padding: 20px;
             border-radius: 16px;
@@ -53,7 +59,9 @@
             margin-bottom: 20px;
         }
 
-        .grid {
+        .grid,
+        .card-grid,
+        .filter-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 20px;
@@ -95,6 +103,10 @@
             background: #dc2626;
         }
 
+        .btn-secondary {
+            background: #475569;
+        }
+
         .badge {
             display: inline-block;
             background: #dbeafe;
@@ -118,6 +130,11 @@
         .error {
             background: #fee2e2;
             color: #991b1b;
+        }
+
+        .section-title {
+            margin-bottom: 18px;
+            color: #0f172a;
         }
 
         footer {
