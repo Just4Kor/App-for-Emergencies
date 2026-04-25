@@ -1,18 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="box">
+<div class="detail-box">
     <span class="badge">{{ worker.specialty }}</span>
-    <h2>{{ worker.username }}</h2>
+    <h2 class="section-title">{{ worker.username }}</h2>
+
     <p><strong>Location:</strong> {{ worker.location }}</p>
     <p><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</p>
     <p><strong>Rating:</strong> {{ worker.rating }} / 5</p>
 
-    <a class="btn" href="{{ url_for('home') }}">Back</a>
+    <a class="btn btn-secondary" href="{{ url_for('home') }}">
+        Back to workers
+    </a>
 </div>
 
-<div class="box">
-    <h2>Send Request</h2>
+<div class="detail-box">
+    <h2 class="section-title">Send a Service Request</h2>
 
     <form method="post">
         <label for="title">Problem title</label>
@@ -21,6 +24,15 @@
             id="title"
             name="title"
             placeholder="Example: Leaking faucet"
+            required
+        >
+
+        <label for="address">Problem address</label>
+        <input
+            type="text"
+            id="address"
+            name="address"
+            placeholder="Example: Gedimino pr. 10, Vilnius"
             required
         >
 
