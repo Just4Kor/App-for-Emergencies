@@ -1,47 +1,38 @@
-from models.request import ServiceRequest
 from services.search import SearchEngine
+from services.worker_file_service import (
+    read_customers,
+    read_requests,
+    read_workers,
+)
 
 
 class Platform:
     def __init__(self):
-        self.users = []
-        self.workers = []
-        self.requests = []
         self.search_engine = SearchEngine()
 
-    def add_user(self, user):
-        self.users.append(user)
-
-    def add_worker(self, worker):
-        self.workers.append(worker)
-
-    def create_request(self, user, worker, title, description):
-        request_id = len(self.requests) + 1
-
-        request = ServiceRequest(
-            request_id,
-            user,
-            worker,
-            title,
-            description
+    def get_workers(self, location="", specialty=""):
+        workers = read_workers()
+        filtered_workers = self.search_engine.filter_workers(
+            workers,
+            location,
+            specialty,
         )
+        return self.search_engine.sort_workers(filtered_workers)
 
-        self.requests.append(request)
-        user.add_request(request)
+    def get_customers(self):
+        return read_customers()
 
-        return request
+    def get_requests(self):
+        return read_requests()
 
-    def find_workers_by_location(self, location):
-        return self.search_engine.filter_by_location(
-            self.workers,
-            location
-        )
+    def get_customer_requests(self, customer_id):
+        return [
+            request for request in self.get_requests()
+            if request.customer_id == str(customer_id)
+        ]
 
-    def find_workers_by_specialty(self, specialty):
-        return self.search_engine.filter_by_specialty(
-            self.workers,
-            specialty
-        )
-
-    def get_best_workers(self):
-        return self.search_engine.sort_by_rating(self.workers)
+    def get_worker_requests(self, worker_id):
+        return [
+            request for request in self.get_requests()
+            if request.worker_id == str(worker_id)
+        ]
