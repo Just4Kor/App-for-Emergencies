@@ -1,20 +1,10 @@
-from web_models.account import BaseAccount
+from web_models.account import AccountView
 
 
-class WorkerAccountModel(BaseAccount):
-    def __init__(
-        self,
-        username,
-        password,
-        specialty,
-        location,
-        hourly_rate
-    ):
-        super().__init__(username, password)
-        self.specialty = specialty
-        self.location = location
-        self.hourly_rate = hourly_rate
-        self.rating = 5
-
-    def get_role(self):
-        return "worker"
+class WorkerView(AccountView):
+    def __init__(self, worker):
+        super().__init__(worker)
+        self.specialty = worker.specialty
+        self.location = worker.location
+        self.hourly_rate = worker.hourly_rate
+        self.rating = worker.get_rating()
