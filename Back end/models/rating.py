@@ -1,20 +1,17 @@
-class WorkerRating:
-    def __init__(self, user, worker, score, comment=""):
-        self.user = user
-        self.worker = worker
-        self.score = score
-        self.comment = comment
+class Rating:
+    def __init__(self):
+        self.scores = []
 
-    @property
-    def score(self):
-        return self._score
+    def add_score(self, score):
+        score = float(score)
 
-    @score.setter
-    def score(self, value):
-        if value < 1 or value > 5:
-            raise ValueError("Rating must be between 1 and 5.")
-        self._score = value
+        if score < 0 or score > 5:
+            raise ValueError("Rating must be between 0 and 5.")
 
-    def update_rating(self, score, comment=""):
-        self.score = score
-        self.comment = comment
+        self.scores.append(score)
+
+    def get_average(self):
+        if not self.scores:
+            return 5.0
+
+        return sum(self.scores) / len(self.scores)
