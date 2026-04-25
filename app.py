@@ -1,33 +1,49 @@
-from datetime import datetime
-
 from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_login import (
     LoginManager,
-    UserMixin,
     current_user,
     login_required,
     login_user,
     logout_user,
 )
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import check_password_hash
 
 from factory.account_factory import AccountFactory
+from models.request import ServiceRequest
+from services.platform import Platform
 from services.worker_file_service import (
-    load_workers_from_file,
-    save_worker_to_file,
+    create_files_if_missing,
+    find_account_by_id,
+    find_account_by_username,
+    get_next_customer_id,
+    get_next_request_id,
+    get_next_worker_id,
+    read_customers,
+    read_requests,
+    read_workers,
+    save_customers,
+    save_requests,
+    save_workers,
+    update_account,
 )
+from web_models.customer_account import CustomerView
+from web_models.worker_account import WorkerView
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///emergency_services.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-db = SQLAlchemy(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+platform = Platform()
+
+CITIES = [
+    "Vilnius",
+    "Kaunas",
+    "Klaipėda",
+    "Šiauliai",
+    "Panevėžys",
+    "Alytus",
+]
 
 SPECIALTIES = [
     "Plumber",
@@ -35,78 +51,12 @@ SPECIALTIES = [
     "Mechanic",
     "Carpenter",
     "Painter",
-    "Locksmith",
-    "HVAC Technician",
 ]
-
-CITIES = [
-    "Vilnius",
-    "Kaunas",
-    "Klaipeda",
-    "Siauliai",
-    "Panevezys",
-    "Alytus",
-    "Marijampole",
-    "Utena",
-]
-
-
-class Account(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-
-    role = db.Column(db.String(20), nullable=False)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-
-    city = db.Column(db.String(80))
-
-    specialty = db.Column(db.String(80))
-    location = db.Column(db.String(80))
-    hourly_rate = db.Column(db.Float)
-    rating = db.Column(db.Float, default=5.0)
-
-
-class ServiceRequest(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default="Pending")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    customer_id = db.Column(db.Integer, nullable=False)
-    worker_id = db.Column(db.Integer, nullable=False)
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(Account, int(user_id))
-
-
-def import_workers_from_txt():
-    file_workers = load_workers_from_file()
-
-    for worker_data in file_workers:
-        existing_worker = Account.query.filter_by(
-            username=worker_data["username"]
-        ).first()
-
-        if existing_worker:
-            continue
-
-        worker = Account(
-            role="worker",
-            username=worker_data["username"],
-            password="imported_worker",
-            specialty=worker_data["specialty"],
-            location=worker_data["location"],
-            hourly_rate=worker_data["hourly_rate"],
-            rating=worker_data["rating"],
-        )
-
-        db.session.add(worker)
-
-    db.session.commit()
+    return find_account_by_id(user_id)
 
 
 @app.route("/")
@@ -114,24 +64,23 @@ def home():
     selected_location = request.args.get("location", "")
     selected_specialty = request.args.get("specialty", "")
 
-    workers_query = Account.query.filter_by(role="worker")
+    workers = platform.get_workers(
+        location=selected_location,
+        specialty=selected_specialty,
+    )
 
-    if selected_location:
-        workers_query = workers_query.filter_by(location=selected_location)
-
-    if selected_specialty:
-        workers_query = workers_query.filter_by(specialty=selected_specialty)
-
-    workers = workers_query.order_by(Account.rating.desc()).all()
+    worker_views = [
+        WorkerView(worker) for worker in workers
+    ]
 
     return render_template(
         "index.html",
-        workers=workers,
-        cities=CITIES,
-        locations=CITIES,
-        specialties=SPECIALTIES,
-        selected_location=selected_location,
-        selected_specialty=selected_specialty,
+        workers = worker_views,
+        locations = CITIES,
+        cities = CITIES,
+        specialties = SPECIALTIES,
+        selected_location = selected_location,
+        selected_specialty = selected_specialty,
     )
 
 
@@ -142,62 +91,62 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
 
-        existing_account = Account.query.filter_by(username=username).first()
-
-        if existing_account:
+        if find_account_by_username(username):
             flash("Username already exists.", "error")
             return redirect(url_for("register"))
 
         if role == "customer":
-            account = AccountFactory.create_customer(
-                Account,
-                username,
-                password,
-                request.form["city"],
+            customers = read_customers()
+
+            customer = AccountFactory.create_customer(
+                user_id = get_next_customer_id(),
+                username = username,
+                password = password,
+                city = request.form["city"],
             )
 
+            customers.append(customer)
+            save_customers(customers)
+
         elif role == "worker":
-            account = AccountFactory.create_worker(
-                Account,
-                username,
-                password,
-                request.form["specialty"],
-                request.form["location"],
-                float(request.form["hourly_rate"]),
+            workers = read_workers()
+
+            worker = AccountFactory.create_worker(
+                worker_id = get_next_worker_id(),
+                username = username,
+                password = password,
+                specialty = request.form["specialty"],
+                location = request.form["location"],
+                hourly_rate = request.form["hourly_rate"],
             )
+
+            workers.append(worker)
+            save_workers(workers)
 
         else:
             flash("Invalid account type.", "error")
             return redirect(url_for("register"))
-
-        db.session.add(account)
-        db.session.commit()
-
-        if role == "worker":
-            save_worker_to_file(account)
 
         flash("Account created successfully.", "success")
         return redirect(url_for("login"))
 
     return render_template(
         "register.html",
-        cities=CITIES,
-        locations=CITIES,
-        specialties=SPECIALTIES,
+        cities = CITIES,
+        locations = CITIES,
+        specialties = SPECIALTIES,
     )
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        account = Account.query.filter_by(
-            username=request.form["username"]
-        ).first()
+        username = request.form["username"]
+        password = request.form["password"]
 
-        if account and check_password_hash(
-            account.password,
-            request.form["password"],
-        ):
+        account = find_account_by_username(username)
+
+        if account and account.password == password:
             login_user(account)
 
             if account.role == "worker":
@@ -205,7 +154,7 @@ def login():
 
             return redirect(url_for("home"))
 
-        flash("Invalid username or password.", "error")
+        flash("Wrong username or password.", "error")
 
     return render_template("login.html")
 
@@ -218,10 +167,10 @@ def logout():
     return redirect(url_for("home"))
 
 
-@app.route("/worker/<int:worker_id>", methods=["GET", "POST"])
+@app.route("/worker/<worker_id>", methods=["GET", "POST"])
 @login_required
 def worker_details(worker_id):
-    worker = db.session.get(Account, worker_id)
+    worker = find_account_by_id(worker_id)
 
     if worker is None or worker.role != "worker":
         flash("Worker not found.", "error")
@@ -232,32 +181,33 @@ def worker_details(worker_id):
         return redirect(url_for("home"))
 
     if request.method == "POST":
-        request_count = ServiceRequest.query.filter_by(
-            customer_id=current_user.id
-        ).count()
+        requests_list = read_requests()
 
-        if request_count >= 5:
-            oldest_request = ServiceRequest.query.filter_by(
-                customer_id=current_user.id
-            ).order_by(ServiceRequest.created_at.asc()).first()
+        customer_requests = platform.get_customer_requests(current_user.id)
 
-            if oldest_request:
-                db.session.delete(oldest_request)
+        if len(customer_requests) >= 5:
+            oldest_request = customer_requests[0]
+            requests_list.remove(oldest_request)
 
-        service_request = ServiceRequest(
-            title=request.form["title"],
-            description=request.form["description"],
-            customer_id=current_user.id,
-            worker_id=worker.id,
+        new_request = ServiceRequest(
+            request_id = get_next_request_id(),
+            title = request.form["title"],
+            description = request.form["description"],
+            address = request.form["address"],
+            status = "Pending",
+            customer_id = current_user.id,
+            worker_id = worker.id,
         )
 
-        db.session.add(service_request)
-        db.session.commit()
+        requests_list.append(new_request)
+        save_requests(requests_list)
 
         flash("Request sent successfully.", "success")
         return redirect(url_for("my_requests"))
 
-    return render_template("worker_details.html", worker=worker)
+    worker_view = WorkerView(worker)
+
+    return render_template("worker_details.html", worker = worker_view)
 
 
 @app.route("/my_requests")
@@ -266,11 +216,9 @@ def my_requests():
     if current_user.role != "customer":
         return redirect(url_for("home"))
 
-    requests_data = ServiceRequest.query.filter_by(
-        customer_id=current_user.id
-    ).order_by(ServiceRequest.created_at.desc()).all()
+    requests_data = platform.get_customer_requests(current_user.id)
 
-    return render_template("requests.html", requests_data=requests_data)
+    return render_template("requests.html", requests_data = requests_data)
 
 
 @app.route("/worker_dashboard")
@@ -279,40 +227,38 @@ def worker_dashboard():
     if current_user.role != "worker":
         return redirect(url_for("home"))
 
-    requests_data = ServiceRequest.query.filter_by(
-        worker_id=current_user.id
-    ).order_by(ServiceRequest.created_at.desc()).all()
+    requests_data = platform.get_worker_requests(current_user.id)
+    worker_view = WorkerView(current_user)
 
-    return render_template("worker_dashboard.html", requests_data=requests_data)
+    return render_template(
+        "worker_dashboard.html",
+        requests_data = requests_data,
+        worker = worker_view,
+    )
 
 
-@app.route("/update_request/<int:request_id>", methods=["POST"])
+@app.route("/update_request/<request_id>", methods=["POST"])
 @login_required
 def update_request(request_id):
     if current_user.role != "worker":
         return redirect(url_for("home"))
 
-    service_request = db.session.get(ServiceRequest, request_id)
-
-    if service_request is None:
-        flash("Request not found.", "error")
-        return redirect(url_for("worker_dashboard"))
-
-    if service_request.worker_id != current_user.id:
-        flash("You cannot update this request.", "error")
-        return redirect(url_for("worker_dashboard"))
-
+    requests_list = read_requests()
     action = request.form["action"]
 
-    if action == "accept":
-        service_request.status = "Accepted"
+    for item in requests_list:
+        if item.id == request_id and item.worker_id == current_user.id:
+            if action == "accept":
+                item.accept()
 
-    if action == "deny":
-        service_request.status = "Denied"
+            if action == "deny":
+                item.deny()
 
-    db.session.commit()
+            save_requests(requests_list)
+            flash("Request updated.", "success")
+            return redirect(url_for("worker_dashboard"))
 
-    flash("Request updated.", "success")
+    flash("Request not found.", "error")
     return redirect(url_for("worker_dashboard"))
 
 
@@ -324,35 +270,39 @@ def profile():
 
         if current_user.role == "customer":
             current_user.city = request.form["city"]
+            current_user.location = request.form["city"]
 
         if current_user.role == "worker":
             current_user.location = request.form["location"]
-            current_user.hourly_rate = float(request.form["hourly_rate"])
+            current_user.hourly_rate = request.form["hourly_rate"]
 
-        db.session.commit()
+        update_account(current_user)
 
         flash("Profile updated.", "success")
         return redirect(url_for("profile"))
 
     request_count = 0
+    user_view = None
 
     if current_user.role == "customer":
-        request_count = ServiceRequest.query.filter_by(
-            customer_id=current_user.id
-        ).count()
+        request_count = len(
+            platform.get_customer_requests(current_user.id)
+        )
+        user_view = CustomerView(current_user)
+
+    if current_user.role == "worker":
+        user_view = WorkerView(current_user)
 
     return render_template(
         "profile.html",
-        cities=CITIES,
-        locations=CITIES,
-        specialties=SPECIALTIES,
-        request_count=request_count,
+        cities = CITIES,
+        locations = CITIES,
+        specialties = SPECIALTIES,
+        request_count = request_count,
+        user_view = user_view,
     )
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        import_workers_from_txt()
-
+    create_files_if_missing()
     app.run(debug=True)
