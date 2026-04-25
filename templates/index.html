@@ -45,16 +45,12 @@
             <div class="card">
                 <span class="badge">{{ worker.specialty }}</span>
                 <h3>{{ worker.username }}</h3>
-
-                <div class="worker-meta">
-                    <div><strong>Location:</strong> {{ worker.location }}</div>
-                    <div><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</div>
-                    <div><strong>Rating:</strong> {{ worker.rating }} / 5</div>
-                </div>
+                <p><strong>Location:</strong> {{ worker.location }}</p>
+                <p><strong>Hourly rate:</strong> €{{ worker.hourly_rate }}/hour</p>
+                <p><strong>Rating:</strong> {{ worker.rating }} / 5</p>
 
                 {% if current_user.is_authenticated and current_user.role == "customer" %}
-                    <a class="btn"
-                       href="{{ url_for('worker_details', worker_id=worker.id) }}">
+                    <a class="btn" href="{{ url_for('worker_details', worker_id=worker.id) }}">
                         View / Request
                     </a>
                 {% elif not current_user.is_authenticated %}
