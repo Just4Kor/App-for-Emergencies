@@ -1,19 +1,30 @@
+from services.rating_service import RatingService
+
+
 class SearchEngine:
-    def filter_by_location(self, workers, location):
-        return [
-            worker for worker in workers
-            if worker.location.lower() == location.lower()
-        ]
+    def __init__(self):
+        self.rating_service = RatingService()
 
-    def filter_by_specialty(self, workers, specialty):
-        return [
-            worker for worker in workers
-            if worker.specialty.lower() == specialty.lower()
-        ]
+    def filter_workers(self, workers, location="", specialty=""):
+        result = workers
 
-    def sort_by_rating(self, workers):
+        if location:
+            result = [
+                worker for worker in result
+                if worker.location == location
+            ]
+
+        if specialty:
+            result = [
+                worker for worker in result
+                if worker.specialty == specialty
+            ]
+
+        return result
+
+    def sort_workers(self, workers):
         return sorted(
             workers,
-            key = lambda worker: worker.rating,
-            reverse = True
+            key=lambda worker: self.rating_service.get_worker_rating(worker),
+            reverse=True,
         )
