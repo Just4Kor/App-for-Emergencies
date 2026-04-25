@@ -1,19 +1,14 @@
+from flask_login import UserMixin
+
 from models.person import Person
 
 
-class User(Person):
-    def __init__(self, person_id, name, location, city):
-        super().__init__(person_id, name, location)
+class User(Person, UserMixin):
+    def __init__(self, user_id, username, password, city):
+        super().__init__(user_id, username, city)
+        self.password = password
         self.city = city
-        self.requests = []
-
-    def add_request(self, request):
-        if len(self.requests) >= 5:
-            self.requests.pop(0)
-        self.requests.append(request)
-
-    def update_city(self, city):
-        self.city = city
+        self.role = "customer"
 
     def get_profile_summary(self):
-        return f"User: {self.name}, City: {self.city}"
+        return f"Customer: {self.username}, City: {self.city}"
