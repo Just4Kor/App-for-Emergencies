@@ -16,7 +16,7 @@ Programa leidžia:
 
 ## Kaip paleisti programą
 
-Įdiegti reikalingas bibliotekas:
+Įsidiegti reikalingas bibliotekas:
 
 ```bash
 pip install flask flask-login
@@ -66,20 +66,18 @@ Darbuotojas gali:
 
 ## Objektinio programavimo principai
 
-## 6. Objektinio programavimo principai
-
 Objektinis programavimas leidžia programą suskirstyti į atskirus objektus, kurie turi savo duomenis ir veiksmus. Mano projekte objektai naudojami klientams, darbuotojams, užklausoms, įvertinimams ir sistemos logikai aprašyti.
 
 Projekte įgyvendinti visi 4 pagrindiniai OOP principai:
 
 - paveldėjimas;
 - abstrakcija;
-- inkapsuliacija;
+- enkapsuliacija;
 - polimorfizmas.
 
 ---
 
-## 6.1 Paveldėjimas
+## Paveldėjimas
 
 Paveldėjimas leidžia vienai klasei perimti kitos klasės savybes ir metodus. Tai padeda sumažinti pasikartojantį kodą ir sukurti aiškią klasių hierarchiją.
 
@@ -116,7 +114,7 @@ Tai reiškia, kad `User` ir `Worker` automatiškai gauna bendras `Person` savybe
 
 ---
 
-## 6.2 Abstrakcija
+## Abstrakcija
 
 Abstrakcija leidžia aprašyti bendrą idėją, nesigilinant į visas detales. Ji padeda sukurti bendrą klasės šabloną, kurį kitos klasės turi įgyvendinti.
 
@@ -164,11 +162,11 @@ Abstrakcija šiame projekte naudinga todėl, kad `Person` aprašo tik bendrą ž
 
 ---
 
-## 6.3 Inkapsuliacija
+## Enkapsuliacija
 
-Inkapsuliacija reiškia, kad objektas saugo savo duomenis ir pats kontroliuoja, kaip tie duomenys keičiami. Tai padeda išvengti neteisingų duomenų ir palaiko tvarkingą programos struktūrą.
+Enkapsuliacija reiškia, kad objektas saugo savo duomenis ir pats kontroliuoja, kaip tie duomenys keičiami. Tai padeda išvengti neteisingų duomenų ir palaiko tvarkingą programos struktūrą.
 
-Mano projekte inkapsuliacija matoma keliose vietose.
+Mano projekte enkapsuliacija matoma keliose vietose.
 
 Pirmas pavyzdys yra `ServiceRequest` klasė. Užklausos statusas nekeičiamas bet kaip, o tam naudojami metodai:
 
@@ -216,11 +214,11 @@ def add_score(self, score):
 
 Tai apsaugo sistemą nuo neteisingų įvertinimų, pavyzdžiui `-1` arba `10`.
 
-Inkapsuliacija mano projekte padeda užtikrinti, kad objektų duomenys būtų keičiami per metodus, o ne atsitiktinai bet kurioje programos vietoje.
+Enkapsuliacija mano projekte padeda užtikrinti, kad objektų duomenys būtų keičiami per metodus, o ne atsitiktinai bet kurioje programos vietoje.
 
 ---
 
-## 6.4 Polimorfizmas
+## Polimorfizmas
 
 Polimorfizmas reiškia, kad tas pats metodas gali turėti skirtingą elgseną skirtingose klasėse.
 
@@ -279,8 +277,7 @@ Polimorfizmas mano projekte naudingas todėl, kad leidžia dirbti su skirtingais
 
 Kompozicija reiškia stiprų ryšį tarp objektų, kai vienas objektas „turi“ kitą objektą kaip savo dalį.
 
-Svarbiausia savybė:
-jei pagrindinis objektas sunaikinamas, jo viduje esantys objektai taip pat praranda prasmę.
+Svarbiausia savybė - jei pagrindinis objektas sunaikinamas, jo viduje esantys objektai taip pat praranda prasmę.
 
 ---
 
@@ -297,9 +294,8 @@ class Worker(Person, UserMixin):
         self.rating_object = Rating()
 ```
 
-Čia:
-- `Worker` turi `Rating` objektą;
-- `Rating` egzistuoja tik tam, kad aptarnautų konkretų darbuotoją.
+Čia `Worker` turi `Rating` objektą.
+`Rating` egzistuoja tik tam, kad aptarnautų konkretų darbuotoją.
 
 Toliau naudojamas metodas:
 
@@ -308,12 +304,8 @@ self.rating_object.add_score(rating)
 self.rating = str(round(self.rating_object.get_average(), 2))
 ```
 
-Tai reiškia:
-- darbuotojo įvertinimas nėra tiesiog skaičius;
-- jis apskaičiuojamas naudojant atskirą objektą (`Rating`);
-- `Rating` objektas sukuriamas **viduje** `Worker` klasės;
-- jis nėra naudojamas savarankiškai;
-- jis priklauso tik vienam darbuotojui.
+Tai reiškia, kad darbuotojo įvertinimas nėra tiesiog skaičius, jis apskaičiuojamas naudojant atskirą objektą (`Rating`).
+`Rating` objektas sukuriamas `Worker` klasės viduje, jis nėra naudojamas savarankiškai ir priklauso tik vienam darbuotojui.
 
 ---
 
@@ -351,7 +343,7 @@ def get_workers(self, location="", specialty=""):
 ---
 
 `Platform` gauna darbuotojus iš failų (`read_workers()`), perduoda juos `SearchEngine`, grąžina rezultatą.
-`Platform` **nesukuria darbuotojų rankiniu būdu**, ji tik dirba su jau egzistuojančiais objektais.
+`Platform` nesukuria darbuotojų rankiniu būdu, ji tik dirba su jau egzistuojančiais objektais.
 
 ---
 
@@ -366,7 +358,7 @@ def get_customer_requests(self, customer_id):
 ```
 
 `Platform` dirba su `ServiceRequest` objektais,cbet jų „neturi“ kaip savo dalies,cjie egzistuoja nepriklausomai (saugomi failuose).
-`Platform` tik **naudoja** kitus objektus,cji jų „nevaldo“ pilnai, objektai egzistuoja ir be `Platform`.
+`Platform` tik naudoja kitus objektus, ji jų „nevaldo“ pilnai, objektai egzistuoja ir be `Platform`.
 
 ---
 
@@ -400,6 +392,7 @@ Programa:
 ---
 
 ## Paieška ir filtravimas
+
 Mano programoje galima filtruoti darbuotojus pagal miestą ir specialybę. Pati programa automatiškai pirmiausia rodo darbuotojus su geriuaisais įvertinimais.
 
 Darbuotojų paieška įgyvendinta faile:
@@ -443,7 +436,7 @@ yra klasės:
 
 Jos naudojamos tam, kad į HTML šablonus būtų perduodami tik reikalingi duomenys.
 
-Pavyzdys:
+## Pavyzdys
 
 ```python
 worker_views = [
@@ -508,7 +501,7 @@ Svarbiausi maršrutai:
 
 ---
 
-## 14. Rezultatai
+## Rezultatai
 
 - Sukurta veikianti skubios pagalbos paslaugų paieškos sistema.
 - Įgyvendinti visi 4 objektinio programavimo principai.
@@ -520,18 +513,9 @@ Svarbiausi maršrutai:
 
 ---
 
-## 15. Išvados
+## Išvados
 
 Šio kursinio darbo metu buvo sukurta objektinio programavimo principais paremta sistema, leidžianti klientams ieškoti darbuotojų ir siųsti jiems užklausas.
-
-Darbo metu buvo pritaikyti:
-- paveldėjimas;
-- abstrakcija;
-- inkapsuliacija;
-- polimorfizmas;
-- Factory Method dizaino šablonas;
-- failų skaitymas ir rašymas;
-- vienetiniai testai.
 
 Programa gali būti toliau plečiama. Ateityje būtų galima:
 - pridėti tikrą darbuotojų vertinimo sistemą;
