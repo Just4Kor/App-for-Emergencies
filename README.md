@@ -1,6 +1,6 @@
 # App-for-Emergencies
 
-## 1. Įvadas
+## Įvadas
 
 Šio kursinio darbo tikslas – sukurti objektinio programavimo principais paremtą programą, kuri leidžia vartotojams rasti skubios pagalbos paslaugų darbuotojus ir pateikti jiems užklausas.
 
@@ -14,7 +14,7 @@ Programa leidžia:
 
 ---
 
-## 2. Kaip paleisti programą
+## Kaip paleisti programą
 
 Įdiegti reikalingas bibliotekas:
 
@@ -42,7 +42,7 @@ http://127.0.0.1:5000
 
 ---
 
-## 3. Kaip naudotis programa
+## Kaip naudotis programa
 
 ### Klientas
 
@@ -64,56 +64,75 @@ Darbuotojas gali:
 
 ---
 
-## 5. Objektinio programavimo principai
+## Objektinio programavimo principai
 
-Projekte įgyvendinti visi 4 OOP principai:
+## 6. Objektinio programavimo principai
+
+Objektinis programavimas leidžia programą suskirstyti į atskirus objektus, kurie turi savo duomenis ir veiksmus. Mano projekte objektai naudojami klientams, darbuotojams, užklausoms, įvertinimams ir sistemos logikai aprašyti.
+
+Projekte įgyvendinti visi 4 pagrindiniai OOP principai:
+
 - paveldėjimas;
 - abstrakcija;
-- enkapsuliacija;
+- inkapsuliacija;
 - polimorfizmas.
 
 ---
 
-## 5.1 Paveldėjimas
+## 6.1 Paveldėjimas
 
-Paveldėjimas leidžia vienai klasei perimti kitos klasės savybes ir metodus.
+Paveldėjimas leidžia vienai klasei perimti kitos klasės savybes ir metodus. Tai padeda sumažinti pasikartojantį kodą ir sukurti aiškią klasių hierarchiją.
 
-Projekte naudojama bazinė klasė:
+Mano projekte bazinė klasė yra `Person`:
 
 ```python
 class Person(ABC):
+    def __init__(self, person_id, username, location=""):
+        self.id = str(person_id)
+        self.username = username
+        self.location = location
 ```
 
-Iš jos paveldi:
+Ši klasė saugo bendrus duomenis, kuriuos turi tiek klientas, tiek darbuotojas:
+- `id`;
+- `username`;
+- `location`.
+
+Iš `Person` klasės paveldi `User` klasė:
 
 ```python
 class User(Person, UserMixin):
 ```
 
-ir:
+Ir `Worker` klasė:
 
 ```python
 class Worker(Person, UserMixin):
 ```
 
-Tai reiškia, kad tiek klientas, tiek darbuotojas turi bendras savybes:
-- `id`;
-- `username`;
-- `location`.
+Tai reiškia, kad `User` ir `Worker` automatiškai gauna bendras `Person` savybes. Klientui papildomai pridedamas `city`, o darbuotojui – `specialty`, `hourly_rate` ir `rating`.
+
+Šis principas mano projekte svarbus todėl, kad klientas ir darbuotojas yra panašūs objektai: abu turi identifikatorių, vartotojo vardą ir vietą, tačiau jų paskirtis sistemoje skiriasi.
 
 ---
 
-## 5.2 Abstrakcija
+## 6.2 Abstrakcija
 
-Abstrakcija naudojama `Person` klasėje.
+Abstrakcija leidžia aprašyti bendrą idėją, nesigilinant į visas detales. Ji padeda sukurti bendrą klasės šabloną, kurį kitos klasės turi įgyvendinti.
 
-Faile `models/person.py` naudojama abstrakti klasė:
+Mano projekte abstrakcija naudojama `Person` klasėje:
+
+```python
+from abc import ABC, abstractmethod
+```
 
 ```python
 class Person(ABC):
 ```
 
-Joje yra abstraktus metodas:
+Ši klasė yra abstrakti, nes ji nėra skirta naudoti kaip konkretus žmogus sistemoje. Ji tik aprašo bendras savybes, kurias turi kiti objektai.
+
+`Person` klasėje yra abstraktus metodas:
 
 ```python
 @abstractmethod
@@ -121,15 +140,37 @@ def get_profile_summary(self):
     pass
 ```
 
-Šis metodas privalo būti įgyvendintas klasėse, kurios paveldi `Person`.
+Tai reiškia, kad kiekviena klasė, kuri paveldi `Person`, privalo turėti savo `get_profile_summary()` metodą.
+
+Pavyzdžiui, `User` klasėje šis metodas grąžina kliento informaciją:
+
+```python
+def get_profile_summary(self):
+    return f"Customer: {self.username}, City: {self.city}"
+```
+
+O `Worker` klasėje jis grąžina darbuotojo informaciją:
+
+```python
+def get_profile_summary(self):
+    return (
+        f"{self.username} - {self.specialty}, "
+        f"{self.location}, {self.hourly_rate}€/h, "
+        f"rating {self.rating}/5"
+    )
+```
+
+Abstrakcija šiame projekte naudinga todėl, kad `Person` aprašo tik bendrą žmogaus struktūrą, o konkrečios klasės (`User` ir `Worker`) pačios nusprendžia, kaip pateikti savo informaciją.
 
 ---
 
-## 5.3 Enkapsuliacija
+## 6.3 Inkapsuliacija
 
-Enkapsuliacija reiškia, kad duomenys ir metodai laikomi klasės viduje.
+Inkapsuliacija reiškia, kad objektas saugo savo duomenis ir pats kontroliuoja, kaip tie duomenys keičiami. Tai padeda išvengti neteisingų duomenų ir palaiko tvarkingą programos struktūrą.
 
-Pavyzdys iš `ServiceRequest` klasės:
+Mano projekte inkapsuliacija matoma keliose vietose.
+
+Pirmas pavyzdys yra `ServiceRequest` klasė. Užklausos statusas nekeičiamas bet kaip, o tam naudojami metodai:
 
 ```python
 def accept(self):
@@ -139,28 +180,57 @@ def deny(self):
     self.status = RequestStatus.DENIED
 ```
 
-Užklausos statusas keičiamas per klasės metodus.
-
-Taip pat `Rating` klasėje tikrinama, kad įvertinimas būtų tinkamas:
+Tai reiškia, kad užklausa pati turi elgseną, kuri leidžia ją priimti arba atmesti. Vietoje to, kad visoje programoje rankiniu būdu rašyčiau:
 
 ```python
-if score < 0 or score > 5:
-    raise ValueError("Rating must be between 0 and 5.")
+request.status = "Accepted"
 ```
+
+naudoju metodą:
+
+```python
+request.accept()
+```
+
+Tai yra aiškiau ir saugiau.
+
+Antras pavyzdys yra `Rating` klasė:
+
+```python
+class Rating:
+    def __init__(self):
+        self.scores = []
+```
+
+Ji turi metodą `add_score()`, kuris patikrina, ar įvertinimas yra tinkamas:
+
+```python
+def add_score(self, score):
+    score = float(score)
+
+    if score < 0 or score > 5:
+        raise ValueError("Rating must be between 0 and 5.")
+
+    self.scores.append(score)
+```
+
+Tai apsaugo sistemą nuo neteisingų įvertinimų, pavyzdžiui `-1` arba `10`.
+
+Inkapsuliacija mano projekte padeda užtikrinti, kad objektų duomenys būtų keičiami per metodus, o ne atsitiktinai bet kurioje programos vietoje.
 
 ---
 
-## 5.4 Polimorfizmas
+## 6.4 Polimorfizmas
 
-Polimorfizmas reiškia, kad tas pats metodas skirtingose klasėse gali veikti skirtingai.
+Polimorfizmas reiškia, kad tas pats metodas gali turėti skirtingą elgseną skirtingose klasėse.
 
-Projekte metodas:
+Mano projekte polimorfizmas matomas per metodą:
 
 ```python
 get_profile_summary()
 ```
 
-naudojamas tiek `User`, tiek `Worker` klasėse.
+Šis metodas yra aprašytas abstrakčioje `Person` klasėje, bet skirtingai įgyvendintas `User` ir `Worker` klasėse.
 
 `User` klasėje:
 
@@ -168,6 +238,8 @@ naudojamas tiek `User`, tiek `Worker` klasėse.
 def get_profile_summary(self):
     return f"Customer: {self.username}, City: {self.city}"
 ```
+
+Šis metodas pateikia kliento informaciją.
 
 `Worker` klasėje:
 
@@ -180,102 +252,125 @@ def get_profile_summary(self):
     )
 ```
 
----
+Šis metodas pateikia darbuotojo informaciją.
 
-## 6. Dizaino šablonas
+Tai reiškia, kad galima naudoti tą patį metodą abiem objektams, bet rezultatas bus skirtingas pagal objekto tipą.
 
-Projekte naudojamas **Factory Method** dizaino šablonas.
-
-Jis įgyvendintas faile:
-
-```text
-factory/account_factory.py
-```
-
-Klasė:
+Pavyzdžiui:
 
 ```python
-class AccountFactory:
+people = [customer, worker]
+
+for person in people:
+    print(person.get_profile_summary())
 ```
 
-Ji turi metodus:
+Vienas objektas grąžins kliento aprašymą, o kitas – darbuotojo aprašymą. Tai yra polimorfizmo pavyzdys.
 
-```python
-create_customer()
-create_worker()
-```
-
-Registracijos metu gali būti sukuriami du skirtingi objektų tipai:
-- klientas;
-- darbuotojas.
-
-Todėl objektų kūrimas perkeltas į `AccountFactory`, o `app.py` tik iškviečia reikiamą metodą.
-
-Kliento kūrimo pavyzdys:
-
-```python
-customer = AccountFactory.create_customer(
-    user_id=get_next_customer_id(),
-    username=username,
-    password=password,
-    city=request.form["city"],
-)
-```
-
-Darbuotojo kūrimo pavyzdys:
-
-```python
-worker = AccountFactory.create_worker(
-    worker_id=get_next_worker_id(),
-    username=username,
-    password=password,
-    specialty=request.form["specialty"],
-    location=request.form["location"],
-    hourly_rate=request.form["hourly_rate"],
-)
-```
+Polimorfizmas mano projekte naudingas todėl, kad leidžia dirbti su skirtingais objektais per bendrą metodą, bet išlaikyti skirtingą jų elgseną.
 
 ---
 
-## 7. Kompozicija ir agregacija
+## Kompozicija ir agregacija
 
-### Kompozicija
+---
 
-Kompozicija matoma `Worker` klasėje.
+## Kompozicija
 
-Darbuotojas turi savo `Rating` objektą:
+Kompozicija reiškia stiprų ryšį tarp objektų, kai vienas objektas „turi“ kitą objektą kaip savo dalį.
 
-```python
-self.rating_object = Rating()
-```
+Svarbiausia savybė:
+jei pagrindinis objektas sunaikinamas, jo viduje esantys objektai taip pat praranda prasmę.
 
-Tai reiškia, kad `Worker` objektas naudoja `Rating` objektą savo įvertinimui valdyti.
+---
 
-### Agregacija
+### Pavyzdys
 
-Agregacija matoma `Platform` klasėje.
-
-Faile:
-
-```text
-services/platform.py
-```
-
-`Platform` klasė gauna darbuotojus, klientus ir užklausas iš failų.
-
-Pavyzdžiai:
+Kompozicija naudojama `Worker` klasėje kartu su `Rating` klase:
 
 ```python
-get_workers()
-get_customers()
-get_requests()
-get_customer_requests()
-get_worker_requests()
+from models.rating import Rating
+
+class Worker(Person, UserMixin):
+    def __init__(...):
+        ...
+        self.rating_object = Rating()
+```
+
+Čia:
+- `Worker` turi `Rating` objektą;
+- `Rating` egzistuoja tik tam, kad aptarnautų konkretų darbuotoją.
+
+Toliau naudojamas metodas:
+
+```python
+self.rating_object.add_score(rating)
+self.rating = str(round(self.rating_object.get_average(), 2))
+```
+
+Tai reiškia:
+- darbuotojo įvertinimas nėra tiesiog skaičius;
+- jis apskaičiuojamas naudojant atskirą objektą (`Rating`);
+- `Rating` objektas sukuriamas **viduje** `Worker` klasės;
+- jis nėra naudojamas savarankiškai;
+- jis priklauso tik vienam darbuotojui.
+
+---
+
+## Agregacija
+
+Agregacija yra silpnesnis ryšys nei kompozicija.
+
+Svarbiausia savybė - objektai gali egzistuoti nepriklausomai vienas nuo kito.
+
+---
+
+### Pavyzdys nr.1
+
+Agregacija naudojama `Platform` klasėje:
+
+```python
+class Platform:
+    def __init__(self):
+        self.search_engine = SearchEngine()
+```
+
+Ir:
+
+```python
+def get_workers(self, location="", specialty=""):
+    workers = read_workers()
+    filtered_workers = self.search_engine.filter_workers(
+        workers,
+        location,
+        specialty,
+    )
+    return self.search_engine.sort_workers(filtered_workers)
 ```
 
 ---
 
-## 8. Failų skaitymas ir rašymas
+`Platform` gauna darbuotojus iš failų (`read_workers()`), perduoda juos `SearchEngine`, grąžina rezultatą.
+`Platform` **nesukuria darbuotojų rankiniu būdu**, ji tik dirba su jau egzistuojančiais objektais.
+
+---
+
+### Pavyzdys nr. 2
+
+```python
+def get_customer_requests(self, customer_id):
+    return [
+        request for request in self.get_requests()
+        if request.customer_id == str(customer_id)
+    ]
+```
+
+`Platform` dirba su `ServiceRequest` objektais,cbet jų „neturi“ kaip savo dalies,cjie egzistuoja nepriklausomai (saugomi failuose).
+`Platform` tik **naudoja** kitus objektus,cji jų „nevaldo“ pilnai, objektai egzistuoja ir be `Platform`.
+
+---
+
+## Failų skaitymas ir rašymas
 
 Failų skaitymas ir rašymas įgyvendintas faile:
 
@@ -304,7 +399,8 @@ Programa:
 
 ---
 
-## 9. Paieška ir filtravimas
+## Paieška ir filtravimas
+Mano programoje galima filtruoti darbuotojus pagal miestą ir specialybę. Pati programa automatiškai pirmiausia rodo darbuotojus su geriuaisais įvertinimais.
 
 Darbuotojų paieška įgyvendinta faile:
 
@@ -329,38 +425,10 @@ sort_workers()
 
 `sort_workers()` rūšiuoja darbuotojus pagal įvertinimą.
 
----
-
-## 10. Platformos logika
-
-Pagrindinė sistemos logika yra faile:
-
-```text
-services/platform.py
-```
-
-`Platform` klasė sujungia:
-- failų servisą;
-- paiešką;
-- darbuotojų gavimą;
-- klientų užklausų gavimą;
-- darbuotojų užklausų gavimą.
-
-Metodas:
-
-```python
-def get_workers(self, location="", specialty=""):
-```
-
-Šis metodas:
-1. nuskaito darbuotojus iš failo;
-2. pritaiko filtravimą;
-3. surūšiuoja darbuotojus;
-4. grąžina rezultatą į `app.py`.
 
 ---
 
-## 11. Web modeliai
+## Web modeliai
 
 Aplanke:
 
@@ -383,7 +451,7 @@ worker_views = [
 ]
 ```
 
-## 12. Flask dalis
+## Flask dalis
 
 Failas:
 
@@ -471,8 +539,7 @@ Programa gali būti toliau plečiama. Ateityje būtų galima:
 - pridėti administratoriaus rolę;
 - pridėti užklausų ištrynimą;
 - pridėti daugiau miestų ir specialybių;
-- pagerinti vartotojo sąsają;
-- pridėti slaptažodžių hashinimą saugumui.
-- pridėti žemėlapį, real-time tracking
+- pridėti slaptažodžių hashinimą saugumui;
+- pridėti žemėlapį su real-time tracking.
 
 ---
