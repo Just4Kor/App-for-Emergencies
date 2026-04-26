@@ -503,13 +503,11 @@ Svarbiausi maršrutai:
 
 ## Rezultatai
 
-- Sukurta veikianti skubios pagalbos paslaugų paieškos sistema.
-- Įgyvendinti visi 4 objektinio programavimo principai.
-- Pritaikytas Factory Method dizaino šablonas.
-- Duomenys saugomi tekstiniuose failuose.
+- Sukurta skubios pagalbos paslaugų paieškos sistema.
+- Duomenys saugomi tekstiniuose failuose vietoj sunkiai suprantamos duomenų bazės..
 - Sukurta klientų ir darbuotojų registracija.
 - Darbuotojai gali priimti arba atmesti užklausas.
-- Sukurtas vienetinių testų failas.
+- Viskas VEIKIA!!!
 
 ---
 
